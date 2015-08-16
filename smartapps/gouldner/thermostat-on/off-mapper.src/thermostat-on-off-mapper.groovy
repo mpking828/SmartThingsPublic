@@ -79,19 +79,21 @@ def initialize() {
         //       which calls this initialize after first install
         //       but for some reason the subscriptions remain so wait a bit
         //       then remove children
-        runIn(300, removeAllChildDevices)
+        runIn(30, removeAllChildDevices)
     }
 }
 
 def uninstalled() { 
+    log.debug "uninstalled"
     // Unsubscribe (should happen automatically but causes remove children to fail
     // if we don't do it here 
     unsubscribe()
     // let unsubscribe finish before removing children
-    runIn(300, removeAllChildDevices)
+    runIn(30, removeAllChildDevices)
 }
 
 def removeAllChildDevices() {
+    log.debug "removeAllChildDevices"
     removeChildDevices(getChildDevices())
 }
 
