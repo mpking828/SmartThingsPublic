@@ -25,9 +25,14 @@ definition(
 
 
 preferences {
-	section("Select the ZXT-120 Device... "){
-		input "thermostat", "capability.Thermostat", title: "ZXT-120", required: false
-	}
+	section("Select the ZXT-120 Device... ") {
+        input("thermostat", "capability.Thermostat", title: "ZXT-120", required: false)
+        input(name: "modes", multiple: true, type: "enum", title: "Make Mode buttons", options: ["Cool","Dry","Heat"], required: true)
+        // Note currently if basename is changed the virtual buttons don't change
+        // Because I don't know how to do that.
+        // However the virtual buttons can be renamed in the app so no big deal.
+        input(name: "basename", type: "text", title: "Button Base Name", required: true)
+    }
 }
 
 def installed() {
@@ -42,45 +47,77 @@ def updated() {
 }
 
 def initialize() {
+    log.debug("initialize: modes=$modes,basename=$basename")
+    def heatButtonRequested = modes.contains("Heat")
+    def coolButtonRequested = modes.contains("Cool")
+    def dryButtonRequested = modes.contains("Dry")
+
     if (thermostat) {        
-        log.debug("device selected seting up child devices and subscriptions")
+        log.debug("device selected setting up child devices and subscriptions")
         def heatDeviceId = app.id + "Heat"
         def heatDevice = getChildDevice(heatDeviceId)
-        if (!heatDevice) {
-		    def heatLabel = thermostat.label + " Heat"
-		    log.debug "Creating Device $heatLabel of type Stateless On/Off Button Tile"
+        if (!heatDevice && heatButtonRequested) {
+            def heatLabel = basename + " Heat"
+            log.debug "Creating Device $heatLabel of type Stateless On/Off Button Tile"
             heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", heatDeviceId, null, [label: heatLabel])
         }
-	    subscribe(heatDevice, "switch.on", heatOnHandler)
-	    subscribe(heatDevice, "switch.off", heatOffHandler)
+        if (heatDevice) {
+            if (heatButtonRequested) {
+                subscribe(heatDevice, "switch.on", heatOnHandler)
+                subscribe(heatDevice, "switch.off", heatOffHandler)
+            } else {
+                // Note this code fails with "You are not authorized to perform this action"
+                // I don't understand why but I think the unsubscribe isn't fast enough
+                deleteChildDevice(heatDevice)
+            }
+        }
         
         def dryDeviceId = app.id + "Dry"
         def dryDevice = getChildDevice(dryDeviceId)
-        if (!dryDevice) {
-		    def dryLabel = thermostat.label + " Dry"
-		    log.debug "Creating Device $dryLabel of type Stateless On/Off Button Tile"
+        if (!dryDevice && modes.contains("Dry")) {
+            def dryLabel = basename + " Dry"
+            log.debug "Creating Device $dryLabel of type Stateless On/Off Button Tile"
             heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", dryDeviceId, null, [label: dryLabel])
         }
-	    subscribe(dryDevice, "switch.on", dryOnHandler)
-	    subscribe(dryDevice, "switch.off", dryOffHandler)
+        if (dryDevice) {
+            if (dryButtonRequested) {
+                subscribe(dryDevice, "switch.on", dryOnHandler)
+                subscribe(dryDevice, "switch.off", dryOffHandler)
+            } else {
+                // Note this code fails with "You are not authorized to perform this action"
+                // I don't understand why but I think the unsubscribe isn't fast enough
+                deleteChildDevice(dryDevice)
+            }
+        }
         
         def coolDeviceId = app.id + "Cool"
         def coolDevice = getChildDevice(coolDeviceId)
-        if (!coolDevice) {
-		    def coolLabel = thermostat.label + " Cool"
-		    log.debug "Creating Device $coolLabel of type Stateless On/Off Button Tile"
+        if (!coolDevice && modes.contains("Cool")) {
+            def coolLabel = basename + " Cool"
+            log.debug "Creating Device $coolLabel of type Stateless On/Off Button Tile"
             coolDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", coolDeviceId, null, [label: coolLabel])
         }
-	    subscribe(coolDevice, "switch.on", coolOnHandler)
-	    subscribe(coolDevice, "switch.off", coolOffHandler)
+
+
+        if (coolDevice) {
+            if (coolButtonRequested) {
+                subscribe(coolDevice, "switch.on", coolOnHandler)
+                subscribe(coolDevice, "switch.off", coolOffHandler)
+            } else {
+                // Note this code fails with "You are not authorized to perform this action"
+                // I don't understand why but I think the unsubscribe isn't fast enough
+                deleteChildDevice(coolDevice)
+            }
+        }
     } else {
         // Note: removing children seem to fail when subscriptions exist
         //       subscriptions should have been removed by updated() method
         //       which calls this initialize after first install
         //       but for some reason the subscriptions remain so wait a bit
         //       then remove children
-        // runIn(30, removeAllChildDevices)
-        removeAllChildDevices 
+        // V1 possible but fails V2 not possible
+        // Fails if reached V1
+        removeAllChildDevices() 
     }
 }
 
@@ -117,7 +154,7 @@ def heatOffHandler(evt) {
 
 def coolOnHandler(evt) {
     log.debug "setting $thermostat.label to Cool Mode"
-	thermostat.dry()
+	thermostat.cool()
 }
 
 def coolOffHandler(evt) {
