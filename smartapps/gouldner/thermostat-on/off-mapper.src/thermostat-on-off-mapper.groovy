@@ -79,7 +79,8 @@ def initialize() {
         //       which calls this initialize after first install
         //       but for some reason the subscriptions remain so wait a bit
         //       then remove children
-        runIn(30, removeAllChildDevices)
+        // runIn(30, removeAllChildDevices)
+        removeAllChildDevices 
     }
 }
 
@@ -89,7 +90,8 @@ def uninstalled() {
     // if we don't do it here 
     unsubscribe()
     // let unsubscribe finish before removing children
-    runIn(30, removeAllChildDevices)
+    // Tim Slagle says I don't need this the server will remove children
+    //runIn(30, removeAllChildDevices)
 }
 
 def removeAllChildDevices() {
