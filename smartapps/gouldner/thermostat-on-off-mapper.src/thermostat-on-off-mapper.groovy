@@ -48,9 +48,9 @@ def updated() {
 
 def initialize() {
     log.debug("initialize: modes=$modes,basename=$basename")
-    def heatButtonRequested = modes.contains("Heat")
-    def coolButtonRequested = modes.contains("Cool")
-    def dryButtonRequested = modes.contains("Dry")
+    def heatButtonRequested = modes?.contains("Heat")
+    def coolButtonRequested = modes?.contains("Cool")
+    def dryButtonRequested = modes?.contains("Dry")
 
     if (thermostat) {        
         log.debug("device selected setting up child devices and subscriptions")
@@ -61,52 +61,53 @@ def initialize() {
             log.debug "Creating Device $heatLabel of type Stateless On/Off Button Tile"
             heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", heatDeviceId, null, [label: heatLabel])
         }
-        if (heatDevice) {
+        else if (heatDevice) {
             if (heatButtonRequested) {
                 subscribe(heatDevice, "switch.on", heatOnHandler)
                 subscribe(heatDevice, "switch.off", heatOffHandler)
             } else {
                 // Note this code fails with "You are not authorized to perform this action"
                 // I don't understand why but I think the unsubscribe isn't fast enough
-                deleteChildDevice(heatDevice)
+                deleteChildDevice(app.id + "Heat")
             }
         }
         
         def dryDeviceId = app.id + "Dry"
         def dryDevice = getChildDevice(dryDeviceId)
-        if (!dryDevice && modes.contains("Dry")) {
+        if (!dryDevice && modes?.contains("Dry")) {
             def dryLabel = basename + " Dry"
             log.debug "Creating Device $dryLabel of type Stateless On/Off Button Tile"
             heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", dryDeviceId, null, [label: dryLabel])
         }
-        if (dryDevice) {
+        else if (dryDevice) {
             if (dryButtonRequested) {
                 subscribe(dryDevice, "switch.on", dryOnHandler)
                 subscribe(dryDevice, "switch.off", dryOffHandler)
             } else {
                 // Note this code fails with "You are not authorized to perform this action"
                 // I don't understand why but I think the unsubscribe isn't fast enough
-                deleteChildDevice(dryDevice)
+                deleteChildDevice(app.id + "Dry")
             }
         }
         
         def coolDeviceId = app.id + "Cool"
         def coolDevice = getChildDevice(coolDeviceId)
-        if (!coolDevice && modes.contains("Cool")) {
+        if (!coolDevice && modes?.contains("Cool")) {
             def coolLabel = basename + " Cool"
             log.debug "Creating Device $coolLabel of type Stateless On/Off Button Tile"
             coolDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", coolDeviceId, null, [label: coolLabel])
         }
 
 
-        if (coolDevice) {
+        else if (coolDevice) {
             if (coolButtonRequested) {
                 subscribe(coolDevice, "switch.on", coolOnHandler)
                 subscribe(coolDevice, "switch.off", coolOffHandler)
             } else {
                 // Note this code fails with "You are not authorized to perform this action"
                 // I don't understand why but I think the unsubscribe isn't fast enough
-                deleteChildDevice(coolDevice)
+                deleteChildDevice(app.id + "Cool")
+                
             }
         }
     } else {
@@ -117,7 +118,7 @@ def initialize() {
         //       then remove children
         // V1 possible but fails V2 not possible
         // Fails if reached V1
-        removeAllChildDevices() 
+        removeAllChildDevices(getChildDevices()) 
     }
 }
 
@@ -131,9 +132,11 @@ def uninstalled() {
     //runIn(30, removeAllChildDevices)
 }
 
-def removeAllChildDevices() {
+def removeAllChildDevices(delete) {
     log.debug "removeAllChildDevices"
-    removeChildDevices(getChildDevices())
+    delete.each {
+        deleteChildDevice(it.deviceNetworkId)
+    }
 }
 
 private removeChildDevices(delete) {
