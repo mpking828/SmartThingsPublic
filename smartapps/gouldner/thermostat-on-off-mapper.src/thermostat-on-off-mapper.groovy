@@ -27,7 +27,7 @@ definition(
 preferences {
 	section("Select the ZXT-120 Device... ") {
         input("thermostat", "capability.Thermostat", title: "ZXT-120", required: false)
-        input(name: "modes", multiple: true, type: "enum", title: "Make Mode buttons", options: ["Cool","Dry","Heat"], required: true)
+        input(name: "modes", multiple: true, type: "enum", title: "Make Mode buttons", options: ["Cool","Dry","Heat"], required: false)
         // Note currently if basename is changed the virtual buttons don't change
         // Because I don't know how to do that.
         // However the virtual buttons can be renamed in the app so no big deal.
@@ -48,9 +48,9 @@ def updated() {
 
 def initialize() {
     log.debug("initialize: modes=$modes,basename=$basename")
-    def heatButtonRequested = modes?.contains("Heat")
-    def coolButtonRequested = modes?.contains("Cool")
-    def dryButtonRequested = modes?.contains("Dry")
+    def heatButtonRequested = modes.contains("Heat")
+    def coolButtonRequested = modes.contains("Cool")
+    def dryButtonRequested = modes.contains("Dry")
 
     if (thermostat) {        
         log.debug("device selected setting up child devices and subscriptions")
@@ -59,9 +59,11 @@ def initialize() {
         if (!heatDevice && heatButtonRequested) {
             def heatLabel = basename + " Heat"
             log.debug "Creating Device $heatLabel of type Stateless On/Off Button Tile"
-            heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", heatDeviceId, null, [label: heatLabel])
+            heatDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", heatDeviceId, null, [label: heatLabel])
         }
-        else if (heatDevice) {
+        // Note: Tim, This should not be part of else case.  I am checking if device was
+        //       created or previously existed here
+        if (heatDevice) {
             if (heatButtonRequested) {
                 subscribe(heatDevice, "switch.on", heatOnHandler)
                 subscribe(heatDevice, "switch.off", heatOffHandler)
@@ -74,12 +76,14 @@ def initialize() {
         
         def dryDeviceId = app.id + "Dry"
         def dryDevice = getChildDevice(dryDeviceId)
-        if (!dryDevice && modes?.contains("Dry")) {
+        if (!dryDevice && dryButtonRequested) {
             def dryLabel = basename + " Dry"
             log.debug "Creating Device $dryLabel of type Stateless On/Off Button Tile"
-            heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", dryDeviceId, null, [label: dryLabel])
+            heatDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", dryDeviceId, null, [label: dryLabel])
         }
-        else if (dryDevice) {
+        // Note: Tim, This should not be part of else case.  I am checking if device was
+        //       created or previously existed here
+        if (dryDevice) {
             if (dryButtonRequested) {
                 subscribe(dryDevice, "switch.on", dryOnHandler)
                 subscribe(dryDevice, "switch.off", dryOffHandler)
@@ -92,22 +96,21 @@ def initialize() {
         
         def coolDeviceId = app.id + "Cool"
         def coolDevice = getChildDevice(coolDeviceId)
-        if (!coolDevice && modes?.contains("Cool")) {
+        if (!coolDevice && coolButtonRequested) {
             def coolLabel = basename + " Cool"
             log.debug "Creating Device $coolLabel of type Stateless On/Off Button Tile"
-            coolDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", coolDeviceId, null, [label: coolLabel])
+            coolDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", coolDeviceId, null, [label: coolLabel])
         }
-
-
-        else if (coolDevice) {
+        // Note: Tim, This should not be part of else case.  I am checking if device was
+        //       created or previously existed here
+        if (coolDevice) {
             if (coolButtonRequested) {
                 subscribe(coolDevice, "switch.on", coolOnHandler)
                 subscribe(coolDevice, "switch.off", coolOffHandler)
             } else {
                 // Note this code fails with "You are not authorized to perform this action"
                 // I don't understand why but I think the unsubscribe isn't fast enough
-                deleteChildDevice(app.id + "Cool")
-                
+                deleteChildDevice(app.id + "Cool") 
             }
         }
     } else {
@@ -129,7 +132,7 @@ def uninstalled() {
     unsubscribe()
     // let unsubscribe finish before removing children
     // Tim Slagle says I don't need this the server will remove children
-    //runIn(30, removeAllChildDevices)
+    // removeAllChildDevices(getChildDevices())
 }
 
 def removeAllChildDevices(delete) {
