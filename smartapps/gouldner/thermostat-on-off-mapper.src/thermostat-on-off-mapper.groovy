@@ -48,9 +48,9 @@ def updated() {
 
 def initialize() {
     log.debug("initialize: modes=$modes,basename=$basename")
-    def heatButtonRequested = modes.contains("Heat")
-    def coolButtonRequested = modes.contains("Cool")
-    def dryButtonRequested = modes.contains("Dry")
+    def heatButtonRequested = modes?.contains("Heat")
+    def coolButtonRequested = modes?.contains("Cool")
+    def dryButtonRequested = modes?.contains("Dry")
 
     if (thermostat) {        
         log.debug("device selected setting up child devices and subscriptions")
@@ -126,13 +126,6 @@ def initialize() {
 }
 
 def uninstalled() { 
-    log.debug "uninstalled"
-    // Unsubscribe (should happen automatically but causes remove children to fail
-    // if we don't do it here 
-    unsubscribe()
-    // let unsubscribe finish before removing children
-    // Tim Slagle says I don't need this the server will remove children
-    // removeAllChildDevices(getChildDevices())
 }
 
 def removeAllChildDevices(delete) {
