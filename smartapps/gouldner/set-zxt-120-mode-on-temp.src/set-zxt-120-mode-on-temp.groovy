@@ -38,6 +38,7 @@ def installed()
 
 def updated()
 {
+    log.debug "updated  subscribing to sensor:${sensor.label ?: sensor.name}"
 	unsubscribe()
 	subscribe(sensor, "temperature", temperatureHandler)
 }
@@ -49,7 +50,7 @@ def temperatureHandler(evt)
 
 private evaluate(currentTemp, desiredTemp)
 {
-	log.debug "EVALUATE($currentTemp, $desiredTemp)"
+	log.debug "EVALUATE Current Temp:$currentTemp, DesiredTemp:$desiredTemp mode:$mode"
 	def threshold = 1.0
 	if (mode == "cool" || mode == "heatOff") {
 		// air conditioner
@@ -62,7 +63,9 @@ private evaluate(currentTemp, desiredTemp)
 				thermostat.off()
 			}
 			sendNotificationWithMode(mode)
-		}
+		} else {
+            log.debug "Threshold not met mode:$mode"
+        }
 	}
 	if (mode == "heat" || mode == "coolOff") {
 		// heater
@@ -75,7 +78,9 @@ private evaluate(currentTemp, desiredTemp)
 			    thermostat.off()
 			}
 			sendNotificationWithMode(mode)
-		}
+		} else {
+            log.debug "Threshold not met mode:$mode"
+        }
 	}
 }
 
