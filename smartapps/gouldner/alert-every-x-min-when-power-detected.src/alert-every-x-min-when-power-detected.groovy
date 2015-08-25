@@ -103,7 +103,6 @@ def powerCheck(evt) {
 				// Zero meter values are sometimes false, ignore first and reset if second is higher
 				// Change first report to false so we report on the next send low value
 			    state.firstZeroReport = false
-                sendPush("Skipped zero Report-Test") 
 			} else {
                 def message = "$checkPowerMeter reporting power under $powerLimit:${meterValue}"
                 sendPowerNotification(message)
