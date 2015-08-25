@@ -413,12 +413,12 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
             def tempName = shortNameVal + " " + map.value + "°"
             log.debug "Sensor Reporting temperatureName $tempName"
             sendEvent("name":"temperatureName", "value":tempName)
+            sendEvent("name":"temperature", "value":map.value, "isStateChange":true, unit:cmdScale, displayed:true)
             break;
         default:
             log.warn "Unknown sensorType reading from device"
             break;
     }
-    map
 }
 
 // - Thermostat Mode Report
