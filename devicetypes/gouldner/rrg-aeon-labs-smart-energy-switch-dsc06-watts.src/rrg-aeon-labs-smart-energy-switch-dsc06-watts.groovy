@@ -64,6 +64,10 @@ metadata {
 	capability "Actuator"
 	capability "Polling"
 	capability "Refresh"
+    
+    attribute "resetTime", "number"
+    attribute "days", "number"
+    attribute "avgKW", "number"
 
 	command "reset"
 
@@ -104,6 +108,12 @@ metadata {
 	standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat") {
 	    state "default", label:'reset kWh', action:"reset", icon:"st.secondary.refresh-icon"
 	}
+	valueTile("days", "device.days", decoration: "flat") {
+	    state "default", label:'${currentValue} days'
+	}
+	valueTile("avgKW", "device.avgKW", decoration: "flat") {
+	    state "default", label:'${currentValue} kWH/day'
+	}
 	standardTile("configure", "device.power", inactiveLabel: false, decoration: "flat") {
 	    state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 	}
@@ -112,7 +122,7 @@ metadata {
 	}
 
 	main (["switch","energy","power"])
-	details(["switch","power","energy","reset","configure","refresh"])
+	details(["switch","power","energy","days","avgKW","reset","configure","refresh"])
     }
 
     preferences {
@@ -259,6 +269,13 @@ def refresh() {
  *  Defined by the custom command "reset"
  */
 def reset() {
+
+    def now=new Date()
+    def nowTime=now.getTime()
+    sendEvent("name":"resetTime", "value":nowTime)
+    sendEvent("name":"days", "value":0)
+    sendEvent("name":"avgKW", "value":0)
+    
     return [
 	zwave.meterV3.meterReset().format(),
 	zwave.meterV3.meterGet(scale: 0).format() //kWh
