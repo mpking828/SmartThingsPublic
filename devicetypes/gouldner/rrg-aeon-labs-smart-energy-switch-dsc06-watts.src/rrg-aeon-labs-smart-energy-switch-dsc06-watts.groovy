@@ -443,6 +443,19 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
         case 0: //kWh
 	    previousValue = device.currentValue("energy") ?: cmd.scaledPreviousMeterValue ?: 0
             map.value = cmd.scaledMeterValue
+            def lastResetTime= device.currentValue("resetTime")
+            // milisec since epoc /1000=sec 60=min 60=hr 24=day
+            def lastResetDays=Math.round((lastResetTime/(1000*60*60*24))*100)/100
+            def now=new Date()
+            def nowTime=now.getTime()
+            def nowDays=Math.round((nowTime/(1000*60*60*24))*100)/100
+            def daysSinceReset=nowDays-lastResetDays
+            if (state.debug) log.debug "daysSinceReset=$daysSinceReset"
+            sendEvent("name":"days", "value":daysSinceReset)
+            if (daysSinceReset >= 1) {
+                def averageKWH=Math.round((cmd.scaledMeterValue/daysSinceReset)*100)/100
+                sendEvent("name":"avgKW", "value":averageKWH)
+            }
             break;
         case 1: //kVAh
             map.value = cmd.scaledMeterValue
