@@ -72,6 +72,8 @@ metadata {
         command "heat"
         command "dry"
         command "off"
+        command "setLearningPosition"
+        command "issueLearningCommand"
         // how do these work....do they take arguments ?
         //command "setCoolingSetpoint"
         //command "setHeatingSetpoint"
@@ -86,6 +88,7 @@ metadata {
         attribute "temperatureName", "STRING"
         attribute "reportedCoolingSetpoint", "STRING"
         attribute "reportedHeatingSetpoint", "STRING"
+        attribute "learningPosition", "NUMBER"
 
         // Z-Wave description of the ZXT-120 device
         fingerprint deviceId: "0x0806"
@@ -95,15 +98,15 @@ metadata {
     // simulator metadata - for testing in the simulator
     simulator {
         // Not sure if these are correct
-        status "off"			: "command: 4003, payload: 00"
-        status "heat"			: "command: 4003, payload: 01"
-        status "cool"			: "command: 4003, payload: 02"
-        status "auto"			: "command: 4003, payload: 03"
-        status "emergencyHeat"	: "command: 4003, payload: 04"
+        status "off"            : "command: 4003, payload: 00"
+        status "heat"           : "command: 4003, payload: 01"
+        status "cool"           : "command: 4003, payload: 02"
+        status "auto"           : "command: 4003, payload: 03"
+        status "emergencyHeat"  : "command: 4003, payload: 04"
 
-        status "fanAuto"		: "command: 4403, payload: 00"
-        status "fanOn"			: "command: 4403, payload: 01"
-        status "fanCirculate"	: "command: 4403, payload: 06"
+        status "fanAuto"        : "command: 4403, payload: 00"
+        status "fanOn"          : "command: 4403, payload: 01"
+        status "fanCirculate"   : "command: 4403, payload: 06"
 
         status "heat 60"        : "command: 4303, payload: 01 01 3C"
         status "heat 68"        : "command: 4303, payload: 01 01 44"
@@ -278,6 +281,15 @@ metadata {
         standardTile("emergencyHeat", "device.thermostatMode", inactiveLabel: false) {
             state "emergencyHeat", action:"switchModeAuto", backgroundColor:"#ff0000", icon: "st.thermostat.emergency-heat"
         }
+        valueTile("learningPosition", "device.learningPosition", inactiveLabel: false, decoration: "flat") {
+            state "learningPosition", label:'${currentValue}', unit:""
+        }
+        controlTile("learningPositionControl", "device.learningPosition", "slider", height: 1, width: 2, inactiveLabel: false, range:"(1..20)") {
+            state "learningPosition", action:"setLearningPosition", backgroundColor: "#1e9cbb"
+        }
+        standardTile("issueLearningCommand", "issueLearningCommand", inactiveLabel: false, decoration: "flat") {
+            state "issueLearningCommand", label:'learn', action:"issueLearningCommand", icon:"st.Bath.bath17"
+        }
 
         // Layout the controls on the SmartThings device UI.  The page is a 3x3 layout, tiles are layed out
         // starting in the upper left working right then down.
@@ -292,7 +304,8 @@ metadata {
                  "heatingSetpoint", "heatSliderControl",
                  "coolingSetpoint", "coolSliderControl",
                  "lastPoll", "currentConfigCode", "currentTempOffset",
-                 "refresh", "configure"
+                 "learningPosition","learningPositionControl",
+                 "issueLearningCommand","refresh", "configure"
         ])
     }
 }
@@ -574,13 +587,13 @@ def poll() {
     // create a list of requests to send
     def commands = []
 
-    commands <<	zwave.sensorMultilevelV3.sensorMultilevelGet().format()		// current temperature
-    commands <<	zwave.batteryV1.batteryGet().format()                       // current battery level
-    commands <<	zwave.thermostatModeV2.thermostatModeGet().format()     	// thermostat mode
-    commands <<	zwave.thermostatFanModeV3.thermostatFanModeGet().format()	// fan speed
-    commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["remoteCode"]).format()		// remote code
-    commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["tempOffsetParam"]).format()  // temp offset
-    commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format()	// oscillate setting
+    commands << zwave.sensorMultilevelV3.sensorMultilevelGet().format()     // current temperature
+    commands << zwave.batteryV1.batteryGet().format()                       // current battery level
+    commands << zwave.thermostatModeV2.thermostatModeGet().format()         // thermostat mode
+    commands << zwave.thermostatFanModeV3.thermostatFanModeGet().format()   // fan speed
+    commands << zwave.configurationV1.configurationGet(parameterNumber: commandParameters["remoteCode"]).format()       // remote code
+    commands << zwave.configurationV1.configurationGet(parameterNumber: commandParameters["tempOffsetParam"]).format()  // temp offset
+    commands << zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format() // oscillate setting
 
     // add requests for each thermostat setpoint available on the device
     def supportedModes = getDataByName("supportedModes")
@@ -661,31 +674,41 @@ def setCoolingSetpoint(degrees) {
     //setThermostatSetpointForMode(degreesInteger.toDouble(), setpointMode)
 }
 
+def setLearningPosition(position) {
+    log.debug "Setting learning postition: $position"
+    sendEvent("name":"learningPosition", "value":position)
+}
+
+def issueLearningCommand() {
+    def position = device.currentValue("learningPosition")
+    log.debug "Issue Learning Command pressed Position Currently: $position"
+}
+
 /*
 def setThermostatSetpointForMode(Double degrees, setpointMode) {
-	// Convert the temperature from the UserInterface's temperature scale to the device's scale
-	def deviceScale = state.scale ?: 1
-	def deviceScaleString = deviceScale == 2 ? "C" : "F"
-	def locationScale = getTemperatureScale()
-	def p = (state.precision == null) ? 1 : state.precision
+    // Convert the temperature from the UserInterface's temperature scale to the device's scale
+    def deviceScale = state.scale ?: 1
+    def deviceScaleString = deviceScale == 2 ? "C" : "F"
+    def locationScale = getTemperatureScale()
+    def p = (state.precision == null) ? 1 : state.precision
 
-	def convertedDegrees
-	if (locationScale == "C" && deviceScaleString == "F") {
-		convertedDegrees = celsiusToFahrenheit(degrees)
-	} else if (locationScale == "F" && deviceScaleString == "C") {
-		convertedDegrees = fahrenheitToCelsius(degrees)
-	} else {
-		convertedDegrees = degrees
-	}
+    def convertedDegrees
+    if (locationScale == "C" && deviceScaleString == "F") {
+        convertedDegrees = celsiusToFahrenheit(degrees)
+    } else if (locationScale == "F" && deviceScaleString == "C") {
+        convertedDegrees = fahrenheitToCelsius(degrees)
+    } else {
+        convertedDegrees = degrees
+    }
 
-	// Report the new temperature being set
-	log.debug "new temp ${degrees}"
+    // Report the new temperature being set
+    log.debug "new temp ${degrees}"
 
-	// Send the new temperature from the thermostat and request confirmation
-	//delayBetween([
-	//	zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-	//	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
-	//])
+    // Send the new temperature from the thermostat and request confirmation
+    //delayBetween([
+    //  zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
+    //  zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
+    //])
 }
 */
 
@@ -698,48 +721,48 @@ def setThermostatSetpoint(degrees) {
 
 /*
 def setThermostatSetpoint(Double degrees, setpointMode = null) {
-	log.debug "setThermostatSetpoint 2arg called.....want to get rid of that"
+    log.debug "setThermostatSetpoint 2arg called.....want to get rid of that"
 
-	// Convert the temperature from the UserInterface's temperature scale to the device's scale
-	def deviceScale = state.scale ?: 1
-	def deviceScaleString = deviceScale == 2 ? "C" : "F"
-	def locationScale = getTemperatureScale()
-	def p = (state.precision == null) ? 1 : state.precision
+    // Convert the temperature from the UserInterface's temperature scale to the device's scale
+    def deviceScale = state.scale ?: 1
+    def deviceScaleString = deviceScale == 2 ? "C" : "F"
+    def locationScale = getTemperatureScale()
+    def p = (state.precision == null) ? 1 : state.precision
 
-	def convertedDegrees
-	if (locationScale == "C" && deviceScaleString == "F") {
-		convertedDegrees = celsiusToFahrenheit(degrees)
-	} else if (locationScale == "F" && deviceScaleString == "C") {
-		convertedDegrees = fahrenheitToCelsius(degrees)
-	} else {
-		convertedDegrees = degrees
-	}
+    def convertedDegrees
+    if (locationScale == "C" && deviceScaleString == "F") {
+        convertedDegrees = celsiusToFahrenheit(degrees)
+    } else if (locationScale == "F" && deviceScaleString == "C") {
+        convertedDegrees = fahrenheitToCelsius(degrees)
+    } else {
+        convertedDegrees = degrees
+    }
 
-	// If a cooling/heating mode setpoint wasn't specified, use the current mode
-	if (setpointMode == null) {
-		def mode = device.currentState("thermostatMode")?.value ?: null
-		setpointMode = setpointMap[setpointModeMap[mode]] ?: 0
-	}
+    // If a cooling/heating mode setpoint wasn't specified, use the current mode
+    if (setpointMode == null) {
+        def mode = device.currentState("thermostatMode")?.value ?: null
+        setpointMode = setpointMap[setpointModeMap[mode]] ?: 0
+    }
 
-	// Report the new temperature being set
-	log.debug "new temp ${degrees}"
+    // Report the new temperature being set
+    log.debug "new temp ${degrees}"
 
-	// Send the new temperature from the thermostat and request confirmation
-	delayBetween([
-		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
-	])
+    // Send the new temperature from the thermostat and request confirmation
+    delayBetween([
+        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
+        zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
+    ])
 }
 */
 
 // Set temperature for the heating mode
 //def setHeatingSetpoint(degrees) {
-//	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1)
+//  setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1)
 //}
 
 // Set temperature for the cooling mode
 //def setCoolingSetpoint(degrees) {
-//	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1)
+//  setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1)
 //}
 
 // Configure
@@ -766,26 +789,26 @@ def configure() {
 /*
 def switchMode() {
 
-	// Determine the thermostat's current mode of operation
-	def currentMode = device.currentState("thermostatMode")?.value
-	def lastTriedMode = getDataByName("lastTriedMode") ?: currentMode ?: "off"
+    // Determine the thermostat's current mode of operation
+    def currentMode = device.currentState("thermostatMode")?.value
+    def lastTriedMode = getDataByName("lastTriedMode") ?: currentMode ?: "off"
 
-	// Determine what modes the device supports
-	def supportedModes = getDataByName("supportedModes")
-	def modeOrder = modes()
+    // Determine what modes the device supports
+    def supportedModes = getDataByName("supportedModes")
+    def modeOrder = modes()
 
-	// Determine the next mode to use, based on the current mode
-	def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
-	def nextMode = next(lastTriedMode)
+    // Determine the next mode to use, based on the current mode
+    def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
+    def nextMode = next(lastTriedMode)
 
-	if (supportedModes?.tokenize()?.contains(currentMode)) {
-		while (!supportedModes.tokenize()?.contains(nextMode) && nextMode != "off") {
-			nextMode = next(nextMode)
-		}
-	}
+    if (supportedModes?.tokenize()?.contains(currentMode)) {
+        while (!supportedModes.tokenize()?.contains(nextMode) && nextMode != "off") {
+            nextMode = next(nextMode)
+        }
+    }
 
-	// Make it so
-	switchToMode(nextMode)
+    // Make it so
+    switchToMode(nextMode)
 }
 */
 
@@ -793,23 +816,23 @@ def switchMode() {
 // Given the name of a mode, change to that mode if possible
 /*
 def switchToMode(nextMode) {
-	// Determine the available modes
-	def supportedModes = getDataByName("supportedModes")
+    // Determine the available modes
+    def supportedModes = getDataByName("supportedModes")
 
-	// If the thermostat can't be set to this mode, cry about it
-	if(supportedModes && !supportedModes.tokenize()?.contains(nextMode)) {
-		log.warn "thermostat mode '$nextMode' is not supported"
-	}
+    // If the thermostat can't be set to this mode, cry about it
+    if(supportedModes && !supportedModes.tokenize()?.contains(nextMode)) {
+        log.warn "thermostat mode '$nextMode' is not supported"
+    }
 
-	// If the mode is even possible
-	if (nextMode in modes()) {
-		// Try to switch to the mode
-		updateState("lastTriedMode", nextMode)
-		return "$nextMode"()  // Call the function perform the mode switch
-	} else {
-		// Otherwise, bail
-		log.debug("no mode method '$nextMode'")
-	}
+    // If the mode is even possible
+    if (nextMode in modes()) {
+        // Try to switch to the mode
+        updateState("lastTriedMode", nextMode)
+        return "$nextMode"()  // Call the function perform the mode switch
+    } else {
+        // Otherwise, bail
+        log.debug("no mode method '$nextMode'")
+    }
 }
 */
 
