@@ -88,7 +88,7 @@ metadata {
         attribute "temperatureName", "STRING"
         attribute "reportedCoolingSetpoint", "STRING"
         attribute "reportedHeatingSetpoint", "STRING"
-        attribute "learningPosition", "NUMBER"
+        attribute "learningPosition", "STRING"
 
         // Z-Wave description of the ZXT-120 device
         fingerprint deviceId: "0x0806"
@@ -284,7 +284,7 @@ metadata {
         valueTile("learningPosition", "device.learningPosition", inactiveLabel: false, decoration: "flat") {
             state "learningPosition", label:'${currentValue}', unit:""
         }
-        controlTile("learningPositionControl", "device.learningPosition", "slider", height: 1, width: 2, inactiveLabel: false, range:"(1..20)") {
+        controlTile("learningPositionControl", "device.learningPosition", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..22)") {
             state "learningPosition", action:"setLearningPosition", backgroundColor: "#1e9cbb"
         }
         standardTile("issueLearningCommand", "issueLearningCommand", inactiveLabel: false, decoration: "flat") {
@@ -681,15 +681,15 @@ def setLearningPosition(position) {
 }
 
 def issueLearningCommand() {
-    def position = device.currentValue("learningPosition")
+    def position = device.currentValue("learningPosition").toInt()
+    def configArray = [position]
     
     log.debug "Issue Learning Command pressed Position Currently: $position"
     
     delayBetween ([
             // Send the new remote code
-            zwave.configurationV1.configurationSet(configurationValue: remoteBytes,
-                    parameterNumber: commandParameters["learningMode"], size: 2).format(),
-            position
+            zwave.configurationV1.configurationSet(configurationValue: configArray,
+                    parameterNumber: commandParameters["learningMode"], size: 1).format()
     ])
 }
 
@@ -1060,7 +1060,7 @@ def switchFanAuto() {
 // tell the ZXT-120 what remote code to use when communicating with the A/C
 def setRemoteCode() {
     // Load the user's remote code setting
-    def remoteCodeVal = remoteCode.toInteger()
+    def remoteCodeVal = remoteCode.toInt()
 
     // Divide the remote code into a 2 byte value
     def short remoteCodeLow = remoteCodeVal & 0xFF
