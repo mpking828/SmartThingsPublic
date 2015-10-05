@@ -681,10 +681,11 @@ def setLearningPosition(position) {
 }
 
 def issueLearningCommand() {
-    def position = device.currentValue("learningPosition").toInt()
-    def configArray = [position]
-    
+    def position = device.currentValue("learningPosition")
     log.debug "Issue Learning Command pressed Position Currently: $position"
+    def configArray = [position.toInt()]
+    log.debug "configArray=$configArray"
+    
     
     delayBetween ([
             // Send the new remote code

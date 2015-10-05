@@ -33,16 +33,16 @@ metadata {
 	}
 
 	tiles {
-		valueTile("value", "device.testValue", inactiveLabel: false, decoration: "flat") {
+		valueTile("value", "testValue", inactiveLabel: false, decoration: "flat") {
 			state "value", action:"reportTestValue", label:'${currentValue}', unit:""
 		}
-		controlTile("valueSliderControl", "device.testValue", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
+		controlTile("valueSliderControl", "testValue", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
 			state "valueSliderControl", action:"setTestValue", backgroundColor:"#d04e00"
 		}
-		valueTile("value2", "device.testValue2", inactiveLabel: false, decoration: "flat") {
+		valueTile("value2", "testValue2", inactiveLabel: false, decoration: "flat") {
 			state "value2", action:"reportTestValue2", label:'${currentValue}', unit:""
 		}
-		controlTile("value2SliderControl", "device.testValue2", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("value2SliderControl", "testValue2", "slider", height: 1, width: 2, inactiveLabel: false) {
 			state "value2SliderControl", action:"setTestValue2", backgroundColor:"#00ff00"
 		}
 		
