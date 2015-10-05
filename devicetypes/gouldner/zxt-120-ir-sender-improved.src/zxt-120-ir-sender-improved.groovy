@@ -356,6 +356,7 @@ def getFanModeMap() { [
 ]}
 // Command parameters
 def getCommandParameters() { [
+        "learningMode": 25,
         "remoteCode": 27,
         "tempOffsetParam": 37,
         "oscillateSetting": 33
@@ -681,7 +682,15 @@ def setLearningPosition(position) {
 
 def issueLearningCommand() {
     def position = device.currentValue("learningPosition")
+    
     log.debug "Issue Learning Command pressed Position Currently: $position"
+    
+    delayBetween ([
+            // Send the new remote code
+            zwave.configurationV1.configurationSet(configurationValue: remoteBytes,
+                    parameterNumber: commandParameters["learningMode"], size: 2).format(),
+            position
+    ])
 }
 
 /*
