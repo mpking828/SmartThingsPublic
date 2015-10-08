@@ -25,6 +25,7 @@ metadata {
 		capability "Switch"
 		capability "Momentary"
 		capability "Relay Switch"
+                capability "Garage Door Control"
 
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
 		fingerprint deviceId: "0x4006", inClusters: "0x98"
