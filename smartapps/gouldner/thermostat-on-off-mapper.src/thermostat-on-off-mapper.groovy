@@ -19,9 +19,8 @@ definition(
     author: "Ronald Gouldner",
     description: "Creates virtual switch which can be mapped to Cool, Heat or Dry",
     category: "Convenience",
-    iconUrl: "http://baldeagle072.github.io/icons/standard-tile@1x.png",
-    iconX2Url: "http://baldeagle072.github.io/icons/standard-tile@2x.png",
-    iconX3Url: "http://baldeagle072.github.io/icons/standard-tile@3x.png")
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch@2x.png")
 
 
 preferences {
