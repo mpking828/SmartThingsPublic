@@ -26,12 +26,14 @@ metadata {
         
         command "testColor"
         command "setNightLightColor"
+        command "setNightBrightness"
         command "modeMomentary"
         command "modeNightlight"
         command "energyMode"
         
         attribute "testColorVal", "String"
         attribute "ledMode", "String"
+        attribute "nightBright", "Number"
 
 		fingerprint inClusters: "0x25,0x32"
 	}
@@ -69,7 +71,7 @@ metadata {
 			state "default", label:'${currentValue} kWh'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'reset kWh', action:"reset"
+			state "default", label:'reset KWH', action:"reset", icon:"st.secondary.refresh-icon"
 		}
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -92,10 +94,17 @@ metadata {
             state "Momentary", label:'Moment', action:"modeNightlight"
             state "NightLight", label:'Night', action:"energyMode"
         }
+        valueTile("nightLightBrightness", "nightBright", inactiveLabel: false, decoration: "flat") {
+            state "nightBright", label:'${currentValue}', unit:"%", backgroundColor:"#ffffff"
+        }
+        controlTile("nightBrightSliderControl", "device.nightBright", "slider", height: 1, width: 2, inactiveLabel: false) {
+            state "nightBright", action:"setNightBrightness", backgroundColor: "#1e9cbb"
+        }
+
 
 		main(["switch","power","energy"])
-		details(["switch","power","energy","configure", "refresh","reset"//,"testrgbSelector"
-                , "ledMode", "nightlightColor"
+		details(["switch","ledMode","power","energy","configure", "refresh","reset"
+                ,"nightLightBrightness", "nightBrightSliderControl", "nightlightColor"
                 ])
 	}
 }
@@ -110,7 +119,7 @@ def updated() {
 
 def parse(String description) {
 	def result = null
-	if(description == "updated") return 
+	if(description == "updated") return
 	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
 	if (cmd) {
 		result = zwaveEvent(cmd)
@@ -143,10 +152,14 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug "cmd:$cmd"
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	def result = []
-
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+    log.debug "cmd=$cmd"
+	def msr = String.format("Manufacture Id:%04X, Product Type Id:%04X, Product Id:%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	log.debug "msr: $msr"
 	updateDataValue("MSR", msr)
 
@@ -208,11 +221,18 @@ def poll() {
 }
 
 def refresh() {
+    log.debug "refresh called"
+    
 	delayBetween([
+        //  RRG testing so commenting out what I am not testing
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
-		zwave.meterV2.meterGet(scale: 2).format()
-	])
+		zwave.meterV2.meterGet(scale: 2).format(),
+        zwave.manufacturerSpecificV2.manufacturerSpecificGet().format(),
+        zwave.versionV1.versionGet().format(),
+        zwave.switchMultilevelV3.switchMultilevelSupportedGet().format(),
+        zwave.switchMultilevelV1.switchMultilevelGet().format() 
+	], 3500)
 }
 
 def configure() {
@@ -227,8 +247,7 @@ def configure() {
             // Set Night Light Mode 0=Energy Mode, 1=Energy (5sec), 2=Night Light Mode (always one color)
             zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 81, size: 1).format(),
             // Brightness of momentary status G(low)% Y(High)% R(Warn)%
-            zwave.configurationV1.configurationSet(configurationValue: [25,25,100], parameterNumber: 84, size: 3).format(),
-            zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
+            zwave.configurationV1.configurationSet(configurationValue: [25,25,100], parameterNumber: 84, size: 3).format()
         ])
 }
 
@@ -281,4 +300,18 @@ def reset() {
 		zwave.meterV2.meterReset().format(),
 		zwave.meterV2.meterGet(scale: 0).format()
 	]
+}
+
+def setNightBrightness(brightVal) {
+    log.debug "setNightBrightness called with value:$brightVal"
+    sendEvent("name":"nightBright", "value":brightVal, "isStateChange":true)
+    if (brightVal >= 0 && brightVal <=100) {
+        log.debug "sending multilevel brightness setting and requesting report"
+        delayBetween([
+            zwave.switchMultilevelV1.switchMultilevelSet(value: brightVal).format(),
+            zwave.switchMultilevelV1.switchMultilevelGet().format(),
+            zwave.switchMultilevelV2.switchMultilevelGet().format(),
+            zwave.switchMultilevelV3.switchMultilevelGet().format() 
+        ], 3500)
+    }
 }
