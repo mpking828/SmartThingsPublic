@@ -35,7 +35,8 @@ metadata {
         attribute "ledMode", "String"
         attribute "nightBright", "Number"
 
-		fingerprint inClusters: "0x25,0x32"
+		fingerprint deviceId:"0x1001", inClusters:"0x5E 0x25 0x70 0x27 0x32 0x81 0x85 0x59 0x72 0x86 0x7A 0x73 0xEF 0x5A 0x82"
+        
 	}
 
 	// simulator metadata
@@ -118,9 +119,11 @@ def updated() {
 }
 
 def parse(String description) {
+    log.debug "parse called description:$description"
 	def result = null
 	if(description == "updated") return
 	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
+    log.debug "Command Parsed cmd:$cmd"
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
@@ -128,6 +131,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+    log.debug "zwave event MeterReport"
 	if (cmd.scale == 0) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 	} else if (cmd.scale == 1) {
@@ -139,6 +143,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 {
+    log.debug "zwave event BasicReport"
 	def evt = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
 	if (evt.isStateChange) {
 		[evt, response(["delay 3000", zwave.meterV2.meterGet(scale: 2).format()])]
@@ -149,6 +154,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 {
+    log.debug "zwave event SwitchBinaryReport"
 	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
@@ -157,6 +163,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+    log.debug "zwave event ManufacturerSpecificReport"
 	def result = []
     log.debug "cmd=$cmd"
 	def msr = String.format("Manufacture Id:%04X, Product Type Id:%04X, Product Id:%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
@@ -242,6 +249,8 @@ def configure() {
         def nightLightColorArray = [ red, green, blue ]
         log.debug "configure called, setting nightlight color to $nightLightColorArray"
         delayBetween([
+            // Report manual changes
+            zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 80, size: 1).format(),
             // Set Night light color RGB
             zwave.configurationV1.configurationSet(configurationValue: nightLightColorArray, parameterNumber: 83, size: 3).format(),
             // Set Night Light Mode 0=Energy Mode, 1=Energy (5sec), 2=Night Light Mode (always one color)
