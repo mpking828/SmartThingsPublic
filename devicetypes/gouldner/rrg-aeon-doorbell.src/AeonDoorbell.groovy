@@ -15,16 +15,21 @@
  *	v 0.2 - added separate preference for alarm triggering so a different ringtone can be used for alarm VS doorbell. created
  *	separate test buttons for doorbell and alarm
  *	v 0.3 - added firmware version and checksum reporting as part of the config command, modifed the way the battery check works, may need to redress it later
+ *  v 0.3A - Modified by @JDawson to add musicPlayer capability and playTrack method
+ *  v gouldner.0.3 Derivative version started, just moved into my name space and changed author and device name so I can install into my ide,
+ *                 all credit still goes to Robert and JDawson I have not yet modified
+ *
  */
 
  metadata {
-	definition (name: "Aeon Doorbell - RV v0.2", namespace: "robertvandervoort", author: "Robert Vandervoort") {
+	definition (name: "Aeon Doorbell Beta", namespace: "gouldner", author: "Robert Vandervoort") {
 		capability "Actuator"
 		capability "Alarm"
         capability "Battery"
 		capability "Switch"
  		capability "Configuration"
 		capability "Refresh"
+		capability "musicPlayer" // @JDAWSON
 
 		command "atest"
         command "btest"
@@ -364,6 +369,17 @@ def configure() {
     ]
 	commands(request)
 }
+
+// Added @JDAWSON
+def playTrack(track) {
+	def request = [
+			zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 0), // disable notifications
+			zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1, scaledConfigurationValue: track.toInteger()), // play track
+			zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2) // enable
+	]
+	commands(request, 50) // send commands, 50ms apart
+}
+// End Added @JDAWSON
 
 private setConfigured() {
 	updateDataValue("configured", "true")
