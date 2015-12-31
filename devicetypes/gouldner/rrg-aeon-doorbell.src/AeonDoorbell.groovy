@@ -9,6 +9,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  NOTE: Original version authored by "Robert Vandervoort" all code is originally his version
+ *        I try to comment as I make changes but you can see his original version at the top of this github history stack
+ *
  *	Changelog:
  *	v 0.1 - initial push of device type, ability to change ring tone, volume and number of rings, basic set reporting
  * for use as a switch to trigger stuff, and ability to trigger as an alarm
@@ -22,7 +25,7 @@
  */
 
 metadata {
-    definition(name: "Aeon Doorbell Beta", namespace: "gouldner", author: "Robert Vandervoort") {
+    definition(name: "Aeon Doorbell Beta", namespace: "gouldner", author: "Ronald Goudlner") {
         capability "Actuator"
         capability "Alarm"
         capability "Battery"
