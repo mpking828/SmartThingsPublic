@@ -25,7 +25,7 @@
  */
 
 metadata {
-    definition(name: "Aeon Doorbell Beta", namespace: "gouldner", author: "Ronald Goudlner") {
+    definition(name: "Aeon Doorbell Beta2", namespace: "gouldner", author: "Robert Vandervoort") {
         capability "Actuator"
         capability "Alarm"
         capability "Battery"
