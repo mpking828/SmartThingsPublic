@@ -26,6 +26,7 @@ metadata {
         capability "Momentary"
         capability "Relay Switch"
         capability "Garage Door Control"
+        capability "Battery"
 
         fingerprint deviceId: "0x4007", inClusters: "0x98"
         fingerprint deviceId: "0x4006", inClusters: "0x98"
@@ -68,13 +69,16 @@ metadata {
         standardTile("refresh", "device.door", inactiveLabel: false, decoration: "flat") {
             state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
         }
+        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+            state "battery", label: '${currentValue}% battery', unit: ""
+        }
         standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
             state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
             state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "off"
         }
 
         main(["toggle", "displayOnly"])
-        details(["toggle", "open", "close", "displayOnly", "button", "refresh"])
+        details(["toggle", "open", "close", "displayOnly", "button", "battery", "refresh"])
     }
 }
 
