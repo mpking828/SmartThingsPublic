@@ -27,6 +27,8 @@ metadata {
         capability "Relay Switch"
         capability "Garage Door Control"
         capability "Battery"
+        
+        attribute "lastBatteryStatus", "STRING"
 
         fingerprint deviceId: "0x4007", inClusters: "0x98"
         fingerprint deviceId: "0x4006", inClusters: "0x98"
@@ -52,6 +54,7 @@ metadata {
             state("closing", label: '${name}', icon: "st.doors.garage.garage-closing", backgroundColor: "#ffe71e")
 
         }
+        /*  Display only tile no longer needed in V2 APP, Keeping tile in case they change the app again and I want it back
         standardTile("displayOnly", "device.door", width: 1, height: 1) {
             state("unknown", label: '${name}', icon: "st.doors.garage.garage-open", backgroundColor: "#ffa81e")
             state("closed", label: '${name}', icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821")
@@ -60,6 +63,7 @@ metadata {
             state("closing", label: '${name}', icon: "st.doors.garage.garage-closing", backgroundColor: "#ffe71e")
 
         }
+        */
         standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
             state "default", label: 'open', action: "door control.open", icon: "st.doors.garage.garage-opening"
         }
@@ -72,13 +76,17 @@ metadata {
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
             state "battery", label: '${currentValue}% battery', unit: ""
         }
+        // Last lastBatteryStatus Tile
+        valueTile("lastBatteryStatus", "device.lastBatteryStatus", inactiveLabel: false, decoration: "flat") {
+            state "lastBatteryStatus", label:'${currentValue}', unit:""
+        }
         standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
             state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
             state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "off"
         }
 
-        main(["toggle", "displayOnly"])
-        details(["toggle", "open", "close", "displayOnly", "button", "battery", "refresh"])
+        main(["toggle"])
+        details(["toggle", "open", "close", "button", "lastBatteryStatus", "battery", "refresh"])
     }
 }
 
@@ -160,6 +168,7 @@ def zwaveEvent(BarrierOperatorReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+    log.debug "Aquiring Notification Report cmd=$cmd"
     def result = []
     def map = [:]
     if (cmd.notificationType == 6) {
@@ -259,14 +268,22 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+    log.debug "Battery Reporting cmd=$cmd"
     def map = [name: "battery", unit: "%"]
     if (cmd.batteryLevel == 0xFF) {
         map.value = 1
+        log.debug "Battery Level=low=1"
         map.descriptionText = "$device.displayName has a low battery"
     } else {
+        log.debug "Battery Level=cmd.batteryLevel"
         map.value = cmd.batteryLevel
     }
     state.lastbatt = new Date().time
+    def now=new Date()
+    def tz = location.timeZone
+    def nowString = now.format("MMM/dd HH:mm",tz)
+
+    sendEvent("name":"lastBatteryStatus", "value":nowString)
     createEvent(map)
 }
 
@@ -323,6 +340,14 @@ def off() {
 
 def refresh() {
     secure(zwave.barrierOperatorV1.barrierOperatorGet())
+    /* Battery Get and Notification Get not working 
+    log.debug "Issuing Bettery Get"
+    secureSequence([
+                zwave.barrierOperatorV1.barrierOperatorGet(),
+                zwave.batteryV1.batteryGet(),
+                zwave.notificationV3.notificationGet()
+        ], 4200)
+    */
 }
 
 def poll() {
