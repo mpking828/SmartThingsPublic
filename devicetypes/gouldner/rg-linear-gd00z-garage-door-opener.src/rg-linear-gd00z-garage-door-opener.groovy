@@ -29,6 +29,8 @@ metadata {
         capability "Battery"
         
         attribute "lastBatteryStatus", "STRING"
+        attribute "batteryStatus", "STRING"
+        command "batteryReset"
 
         fingerprint deviceId: "0x4007", inClusters: "0x98"
         fingerprint deviceId: "0x4006", inClusters: "0x98"
@@ -73,12 +75,15 @@ metadata {
         standardTile("refresh", "device.door", inactiveLabel: false, decoration: "flat") {
             state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
         }
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
-            state "battery", label: '${currentValue}% battery', unit: ""
+        valueTile("batteryStatus", "device.batteryStatus", inactiveLabel: false, decoration: "flat") {
+            state "batteryStatus", label: 'Battery ${currentValue}', unit: ""
         }
         // Last lastBatteryStatus Tile
         valueTile("lastBatteryStatus", "device.lastBatteryStatus", inactiveLabel: false, decoration: "flat") {
             state "lastBatteryStatus", label:'${currentValue}', unit:""
+        }
+        valueTile("batteryReset", "device.batteryStatus", inactiveLabel: false) {
+            state "default", label: 'Battery\nReset', action: "batteryReset"
         }
         standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
             state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
@@ -86,7 +91,7 @@ metadata {
         }
 
         main(["toggle"])
-        details(["toggle", "open", "close", "button", "lastBatteryStatus", "battery", "refresh"])
+        details(["toggle", "open", "close", "lastBatteryStatus", "batteryStatus", "batteryReset", "button", "refresh"])
     }
 }
 
@@ -226,7 +231,11 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
                 } else {
                     map.descriptionText = "$device.displayName door sensor has a low battery"
                 }
-                result << createEvent(name: "battery", value: 1, unit: "%", descriptionText: map.descriptionText)
+                result << createEvent(name: "batteryStatus", value: "LOW", descriptionText: map.descriptionText)
+                def now=new Date()
+                def tz = location.timeZone
+                def nowString = "Low:" + now.format("MMM/dd HH:mm",tz)
+                result << createEvent(name:"lastBatteryStatus", value:nowString, descriptionText: map.descriptionText)
                 break
             case 0x4B:
                 map.descriptionText = "$device.displayName detected a short in wall station wires"
@@ -267,6 +276,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
     result ? [createEvent(map), *result] : createEvent(map)
 }
 
+// RRG 1/8/2016
+// This never gets called, I am pretty sure Linear doesn't support betteryGet
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     log.debug "Battery Reporting cmd=$cmd"
     def map = [name: "battery", unit: "%"]
@@ -279,11 +290,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
         map.value = cmd.batteryLevel
     }
     state.lastbatt = new Date().time
-    def now=new Date()
-    def tz = location.timeZone
-    def nowString = now.format("MMM/dd HH:mm",tz)
-
-    sendEvent("name":"lastBatteryStatus", "value":nowString)
     createEvent(map)
 }
 
@@ -299,6 +305,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug "cmd:$cmd"
     def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
     updateDataValue("fw", fw)
     def text = "$device.displayName: firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
@@ -312,8 +319,17 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy 
     createEvent(displayed: true, descriptionText: "$device.displayName is busy, $msg")
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.powerlevelv1.PowerlevelReport cmd) {
+    log.debug "Power Level Report cmd=$cmd"
+    createEvent(displayed: true, descriptionText: "$device.displayName rejected the last request")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejectedRequest cmd) {
     createEvent(displayed: true, descriptionText: "$device.displayName rejected the last request")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.applicationcapabilityv1.CommandCommandClassNotSupported cmd) {
+    log.debug "Command Class Not Supported cmd:$cmd"
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -339,21 +355,31 @@ def off() {
 }
 
 def refresh() {
-    secure(zwave.barrierOperatorV1.barrierOperatorGet())
-    /* Battery Get and Notification Get not working 
-    log.debug "Issuing Bettery Get"
+    //secure(zwave.barrierOperatorV1.barrierOperatorGet())
+    /* BatteryGet and NotificationGet not working */
+    log.debug "Issuing Refresh (barrier state, and version report to log)"
     secureSequence([
-                zwave.barrierOperatorV1.barrierOperatorGet(),
-                zwave.batteryV1.batteryGet(),
-                zwave.notificationV3.notificationGet()
+                zwave.barrierOperatorV1.barrierOperatorGet()
+                ,zwave.versionV1.versionGet()
+                //,zwave.powerlevelV1.powerlevelGet()
+                //,zwave.notificationV3.notificationGet()
+                //,zwave.notificationV3.notificationSupportedGet()
         ], 4200)
-    */
+    /* */
 }
 
 def poll() {
     secure(zwave.barrierOperatorV1.barrierOperatorGet())
 }
 
+def batteryReset() {
+    log.debug "Battery Reset"
+    def now=new Date()
+    def tz = location.timeZone
+    def nowString = "RESET:" + now.format("MMM/dd HH:mm",tz)
+    sendEvent("name": "batteryStatus", "value":"OK", "descriptionText":"Battery Reset to OK")
+    sendEvent("name":"lastBatteryStatus", "value":nowString)
+}
 
 def push() {
 
@@ -374,9 +400,7 @@ def push() {
     } else {
         log.debug "push() called when door state is $lastValue - there's nothing push() can do"
     }
-
 }
-
 
 private secure(physicalgraph.zwave.Command cmd) {
     zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
