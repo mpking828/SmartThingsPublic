@@ -7,7 +7,7 @@
  */
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Stateless On-Off Button Tile", namespace: "gouldner", author: "Ronald Gouldner") {
+	definition (name: "Stateless On/Off Button Tile", namespace: "gouldner", author: "Ronald Gouldner") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"
@@ -25,8 +25,14 @@ metadata {
 			state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
+        standardTile("buttonOn", "device.switchOn", width: 1, height: 1) {
+			state "on", label: 'On', action: "switch.on", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		}
+        standardTile("buttonOff", "device.switchOff", width: 1, height: 1) {
+			state "off", label: 'Off', action: "switch.off", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+		}
 		main "button"
-		details "button"
+		details "button","buttonOn","buttonOff"
 	}
 }
 
