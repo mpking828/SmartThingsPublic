@@ -47,7 +47,7 @@ def initialize() {
     def deviceId = app.id + "SimulatedSwitch"
     def existing = getChildDevice(deviceId)
     if (!existing) {
-        def childDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", deviceId, null, [label: switchLabel])
+        def childDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", deviceId, null, [label: switchLabel])
     }
 }
 
