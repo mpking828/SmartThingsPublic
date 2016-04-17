@@ -58,7 +58,7 @@ def initialize() {
         if (!heatDevice && heatButtonRequested) {
             def heatLabel = basename + " Heat"
             log.debug "Creating Device $heatLabel of type Stateless On/Off Button Tile"
-            heatDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", heatDeviceId, null, [label: heatLabel])
+            heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", heatDeviceId, null, [label: heatLabel])
         }
         // Note: Tim, This should not be part of else case.  I am checking if device was
         //       created or previously existed here
@@ -78,7 +78,7 @@ def initialize() {
         if (!dryDevice && dryButtonRequested) {
             def dryLabel = basename + " Dry"
             log.debug "Creating Device $dryLabel of type Stateless On/Off Button Tile"
-            heatDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", dryDeviceId, null, [label: dryLabel])
+            heatDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", dryDeviceId, null, [label: dryLabel])
         }
         // Note: Tim, This should not be part of else case.  I am checking if device was
         //       created or previously existed here
@@ -98,7 +98,7 @@ def initialize() {
         if (!coolDevice && coolButtonRequested) {
             def coolLabel = basename + " Cool"
             log.debug "Creating Device $coolLabel of type Stateless On/Off Button Tile"
-            coolDevice = addChildDevice("gouldner", "Stateless On-Off Button Tile", coolDeviceId, null, [label: coolLabel])
+            coolDevice = addChildDevice("gouldner", "Stateless On/Off Button Tile", coolDeviceId, null, [label: coolLabel])
         }
         // Note: Tim, This should not be part of else case.  I am checking if device was
         //       created or previously existed here
