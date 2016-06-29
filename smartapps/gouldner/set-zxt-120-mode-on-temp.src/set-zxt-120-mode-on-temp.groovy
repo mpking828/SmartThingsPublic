@@ -24,7 +24,7 @@ preferences {
 		input "setpoint", "decimal", title: "Set Temp"
 	}
 	section("Set Mode"){
-		input "mode", "enum", title: "Mode?", options: ["heat","cool","CoolOff","HeatOff"]
+		input "mode", "enum", title: "Mode?", options: ["heat","cool","coolOff","heatOff"]
 	}
     section("Notify with Push Notification"){
 		input "pushNotify", "enum", title: "Send Push notification ?", options: ["yes","no"]
