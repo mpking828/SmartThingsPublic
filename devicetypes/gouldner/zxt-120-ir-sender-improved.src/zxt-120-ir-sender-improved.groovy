@@ -248,13 +248,13 @@ metadata {
         standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
             state "default", action:"polling.poll", icon:"st.secondary.refresh"
         }
-        // Configure button.  Syncronize the device capabilities that the UI provides
-        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
-            state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-        }
         // Last Poll Tile
         valueTile("lastPoll", "device.lastPoll", inactiveLabel: false, decoration: "flat") {
             state "lastPoll", label:'${currentValue}', unit:""
+        }
+        // Configure button.  Syncronize the device capabilities that the UI provides
+        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+            state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
         }
         // Current Config Code
         valueTile("currentConfigCode", "device.currentConfigCode", inactiveLabel: false, decoration: "flat") {
@@ -920,7 +920,7 @@ def setThermostatMode(String value) {
 
         // Report the new temperature being set
         log.debug "new temp ${degrees}"
-        log.debug("Sending Temp [$convertedDegrees] for heat mode before enabling mode")
+        log.debug("Sending Temp [$convertedDegrees] for $value mode before enabling mode")
         // Send the new temperature from the thermostat and request confirmation
         commands << zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format()
         commands << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointMode).format()
