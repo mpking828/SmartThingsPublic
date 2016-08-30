@@ -129,7 +129,7 @@ metadata {
         // The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
         // of the temperature
         valueTile("temperature", "device.temperature") {
-            state("temperature", label:'${currentValue}°',
+            state("temperature", label:'${currentValue}°', unit:"F",
                     backgroundColors:[
                             [value: 31, color: "#153591"],
                             [value: 44, color: "#1e9cbb"],
@@ -402,6 +402,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
         case 1:
             // temperature
             def cmdScale = cmd.scale == 1 ? "F" : "C"
+            log.debug "cmd.scale=$cmd.scale"
+            log.debug "cmd.scaledSensorValue=$cmd.scaledSensorValue"
             // converTemp returns string with two decimal places
             // convert to double then to int to drop the decimal
             Integer temp = (int) convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale).toDouble()
@@ -411,9 +413,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
             // Send event to set ShortName + Temp tile
             def shortNameVal = shortName == null ? "ZXT-120" : shortName
             def tempName = shortNameVal + " " + map.value + "°"
-            log.debug "Sensor Reporting temperatureName $tempName"
+            log.debug "Sensor Reporting temperatureName $tempName map.value=$map.value, cmdScale=$cmdScale"
             sendEvent("name":"temperatureName", "value":tempName)
-            sendEvent("name":"temperature", "value":map.value, "isStateChange":true, unit:cmdScale, displayed:true)
+            // Pass value converted to Fahrenheit and Unit of 1 which means Fahrenheit
+            sendEvent("name":"temperature", "value":map.value, "isStateChange":true, unit:1, displayed:true)
+            //sendEvent("name":"temperature", "value":map.value, "isStateChange":true, displayed:true)
             break;
         default:
             log.warn "Unknown sensorType reading from device"
