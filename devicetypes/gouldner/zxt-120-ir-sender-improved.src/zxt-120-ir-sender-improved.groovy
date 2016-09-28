@@ -213,6 +213,12 @@ metadata {
         controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
             state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
         }
+        controlTile("heatSliderControlC", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(19..28)") {
+            state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor: "#d04e00"
+        }
+        controlTile("coolSliderControlC", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(19..28)") {
+            state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
+        }
 
         // Mode switch.  Indicate and allow the user to change between heating/cooling modes
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
@@ -289,8 +295,12 @@ metadata {
                  "reportedCoolingSetpoint","off","reportedHeatingSetpoint",
                  "fanModeLow","fanModeMed","fanModeHigh",
                  "fanModeAuto", "swingModeOn", "swingModeOff",
-                 "heatingSetpoint", "heatSliderControl",
-                 "coolingSetpoint", "coolSliderControl",
+                 // Comment Out next two lines for Celsius Sliders
+                 "heatingSetpoint", "heatSliderControl",      // Show Fahrenheit Heat Slider
+                 "coolingSetpoint", "coolSliderControl",      // Show Fahrenheit Heat Slider
+                 // Uncomment next two lines for Celsius Sliders
+                 //"heatingSetpoint", "heatSliderControlC",   // Show Celsius Heat Slider
+                 //"coolingSetpoint", "coolSliderControlC",   // Show Celsius Cool Slider
                  "lastPoll", "currentConfigCode", "currentTempOffset",
                  "refresh", "configure"
         ])
@@ -665,86 +675,12 @@ def setCoolingSetpoint(degrees) {
     //setThermostatSetpointForMode(degreesInteger.toDouble(), setpointMode)
 }
 
-/*
-def setThermostatSetpointForMode(Double degrees, setpointMode) {
-	// Convert the temperature from the UserInterface's temperature scale to the device's scale
-	def deviceScale = state.scale ?: 1
-	def deviceScaleString = deviceScale == 2 ? "C" : "F"
-	def locationScale = getTemperatureScale()
-	def p = (state.precision == null) ? 1 : state.precision
-
-	def convertedDegrees
-	if (locationScale == "C" && deviceScaleString == "F") {
-		convertedDegrees = celsiusToFahrenheit(degrees)
-	} else if (locationScale == "F" && deviceScaleString == "C") {
-		convertedDegrees = fahrenheitToCelsius(degrees)
-	} else {
-		convertedDegrees = degrees
-	}
-
-	// Report the new temperature being set
-	log.debug "new temp ${degrees}"
-
-	// Send the new temperature from the thermostat and request confirmation
-	//delayBetween([
-	//	zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-	//	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
-	//])
-}
-*/
-
 //***** Set the thermostat */
 def setThermostatSetpoint(degrees) {
     log.debug "setThermostatSetpoint called.....want to get rid of that"
     // convert the temperature to a number and execute
     setThermostatSetpoint(degrees.toDouble())
 }
-
-/*
-def setThermostatSetpoint(Double degrees, setpointMode = null) {
-	log.debug "setThermostatSetpoint 2arg called.....want to get rid of that"
-
-	// Convert the temperature from the UserInterface's temperature scale to the device's scale
-	def deviceScale = state.scale ?: 1
-	def deviceScaleString = deviceScale == 2 ? "C" : "F"
-	def locationScale = getTemperatureScale()
-	def p = (state.precision == null) ? 1 : state.precision
-
-	def convertedDegrees
-	if (locationScale == "C" && deviceScaleString == "F") {
-		convertedDegrees = celsiusToFahrenheit(degrees)
-	} else if (locationScale == "F" && deviceScaleString == "C") {
-		convertedDegrees = fahrenheitToCelsius(degrees)
-	} else {
-		convertedDegrees = degrees
-	}
-
-	// If a cooling/heating mode setpoint wasn't specified, use the current mode
-	if (setpointMode == null) {
-		def mode = device.currentState("thermostatMode")?.value ?: null
-		setpointMode = setpointMap[setpointModeMap[mode]] ?: 0
-	}
-
-	// Report the new temperature being set
-	log.debug "new temp ${degrees}"
-
-	// Send the new temperature from the thermostat and request confirmation
-	delayBetween([
-		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
-	])
-}
-*/
-
-// Set temperature for the heating mode
-//def setHeatingSetpoint(degrees) {
-//	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1)
-//}
-
-// Set temperature for the cooling mode
-//def setCoolingSetpoint(degrees) {
-//	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1)
-//}
 
 // Configure
 // Syncronize the device capabilities with those that the UI provides
@@ -761,61 +697,6 @@ def configure() {
             zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
     ], 2300)
 }
-
-//***** Change mode */
-// Change the thermostat's heating/cooling mode
-
-// Switch Mode
-// Change to the next available mode
-/*
-def switchMode() {
-
-	// Determine the thermostat's current mode of operation
-	def currentMode = device.currentState("thermostatMode")?.value
-	def lastTriedMode = getDataByName("lastTriedMode") ?: currentMode ?: "off"
-
-	// Determine what modes the device supports
-	def supportedModes = getDataByName("supportedModes")
-	def modeOrder = modes()
-
-	// Determine the next mode to use, based on the current mode
-	def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
-	def nextMode = next(lastTriedMode)
-
-	if (supportedModes?.tokenize()?.contains(currentMode)) {
-		while (!supportedModes.tokenize()?.contains(nextMode) && nextMode != "off") {
-			nextMode = next(nextMode)
-		}
-	}
-
-	// Make it so
-	switchToMode(nextMode)
-}
-*/
-
-// Switch To Mode
-// Given the name of a mode, change to that mode if possible
-/*
-def switchToMode(nextMode) {
-	// Determine the available modes
-	def supportedModes = getDataByName("supportedModes")
-
-	// If the thermostat can't be set to this mode, cry about it
-	if(supportedModes && !supportedModes.tokenize()?.contains(nextMode)) {
-		log.warn "thermostat mode '$nextMode' is not supported"
-	}
-
-	// If the mode is even possible
-	if (nextMode in modes()) {
-		// Try to switch to the mode
-		updateState("lastTriedMode", nextMode)
-		return "$nextMode"()  // Call the function perform the mode switch
-	} else {
-		// Otherwise, bail
-		log.debug("no mode method '$nextMode'")
-	}
-}
-*/
 
 // Switch Fan Mode
 // Switch to the next available fan speed
@@ -880,7 +761,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
         log.warn "Setpoint Report for Unknown Type $cmd.setpointType"
         return
     }
-    
+     
     // Return the interpretation of the report
     log.debug "Thermostat Setpoint Report for $name = $reportedTemp forcing state change true"
     sendEvent("name":name, "value":reportedTemp, "isStateChange":true)
@@ -908,19 +789,28 @@ def setThermostatMode(String value) {
 
     // Send temp if degrees set
     if (degrees != 0 && setpointMode != null) {
+        log.debug "state.scale=${state.scale}"
         def deviceScale = state.scale ?: 1
+        log.debug "deviceScale=${deviceScale}"
         def deviceScaleString = deviceScale == 2 ? "C" : "F"
+        log.debug "deviceScaleString=${deviceScaleString}"
         def locationScale = getTemperatureScale()
+        log.debug "state.precision=${state.precision}"
         def p = (state.precision == null) ? 1 : state.precision
+        log.debug "p=${p}"
 
         def convertedDegrees
         if (locationScale == "C" && deviceScaleString == "F") {
-            convertedDegrees = celsiusToFahrenheit(degrees)
+            log.debug "Converting celsius to fahrenheit"
+            convertedDegrees = Math.ceil(celsiusToFahrenheit(degrees))
         } else if (locationScale == "F" && deviceScaleString == "C") {
+            log.debug "Converting fahrenheit to celsius"
             convertedDegrees = fahrenheitToCelsius(degrees)
         } else {
+            log.debug "No Conversion needed"
             convertedDegrees = degrees
         }
+        log.debug "convertedDegrees=${convertedDegrees}, degrees=${degrees}"
 
         // Report the new temperature being set
         log.debug "new temp ${degrees}"
