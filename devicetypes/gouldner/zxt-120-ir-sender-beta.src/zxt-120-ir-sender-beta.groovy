@@ -132,7 +132,7 @@ metadata {
         // The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
         // of the temperature
         valueTile("temperature", "device.temperature") {
-            state("temperature", label:'${currentValue}°',
+            state("temperature", label:'${currentValue}°', unit:"F",
                     backgroundColors:[
                             [value: 31, color: "#153591"],
                             [value: 44, color: "#1e9cbb"],
@@ -427,7 +427,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
             def tempName = shortNameVal + " " + map.value + "°"
             log.debug "Sensor Reporting temperatureName $tempName"
             sendEvent("name":"temperatureName", "value":tempName)
-            sendEvent("name":"temperature", "value":map.value, "isStateChange":true, unit:cmdScale, displayed:true)
+            sendEvent("name":"temperature", "value":map.value, "isStateChange":true, unit:1, displayed:true)
             break;
         default:
             log.warn "Unknown sensorType reading from device"
