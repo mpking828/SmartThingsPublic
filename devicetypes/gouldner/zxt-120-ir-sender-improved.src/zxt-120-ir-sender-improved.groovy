@@ -46,7 +46,7 @@ metadata {
         capability "Thermostat"
         capability "Configuration"
         // Polling has never worked on Smart Things.
-        //capability "Polling"
+        capability "Polling"
         // Try Health Check to aquire temp from device
         capability "Health Check"
         capability "Sensor"
