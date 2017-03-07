@@ -14,6 +14,13 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
+
+preferences {
+    input name: "enableSwitch", type: "enum", title: "Enable Switch Capability?", options: ["Disabled","On=Open","On=Close"], description: "Enable Switch Capability?", required: true
+}
+
+
 metadata {
     definition(name: "RG Linear GD00Z Garage Door Opener", namespace: "gouldner", author: "Ronald Gouldner") {
         capability "Actuator"
@@ -46,7 +53,7 @@ metadata {
         reply "988100660100": "command: 9881, payload: 00 66 03 FC"
         reply "9881006601FF": "command: 9881, payload: 00 66 03 FE"
     }
-
+    
     tiles {
         standardTile("toggle", "device.door", width: 2, height: 2) {
             state("unknown", label: '${name}', action: "refresh.refresh", icon: "st.doors.garage.garage-open", backgroundColor: "#ffa81e")
@@ -82,16 +89,20 @@ metadata {
         valueTile("lastBatteryStatus", "device.lastBatteryStatus", inactiveLabel: false, decoration: "flat") {
             state "lastBatteryStatus", label:'${currentValue}', unit:""
         }
-        valueTile("batteryReset", "device.batteryStatus", inactiveLabel: false) {
+        valueTile("batteryReset", "device.batteryStatus", inactiveLabel: false, decoration: "flat") {
             state "default", label: 'Battery\nReset', action: "batteryReset"
         }
         standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
             state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
             state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "off"
         }
+        
+        standardTile("version", "device.version", inactiveLabel: false, decoration: "flat") {
+            state "version", label: 'v2.1'
+        }
 
         main(["toggle"])
-        details(["toggle", "open", "close", "lastBatteryStatus", "batteryStatus", "batteryReset", "button", "refresh"])
+        details(["toggle", "open", "close", "lastBatteryStatus", "batteryStatus", "batteryReset", "button", "refresh","version"])
     }
 }
 

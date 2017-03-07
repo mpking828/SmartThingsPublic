@@ -22,7 +22,8 @@ preferences {
 }
 metadata {
 	definition (name: "Enlighten Solar System", namespace: "gouldner", author: "Ronald Gouldner") {
-	capability "Power Meter" 
+	capability "Actuator" /* Added for Rule Manager */
+    capability "Power Meter" 
     capability "Refresh"
 	capability "Polling"
         
@@ -160,7 +161,7 @@ def energyRefresh() {
                           ,sendEvent(name: 'energy_life', value: (String.format("%5.2f",energyLife)))
                           ,sendEvent(name: 'power', value: (currentPower))
 						  ,sendEvent(name: 'production_level', value: (String.format("%5.2f",productionLevel)))
-						  ,sendEvent(name: 'today_max_prod', value: (todayMaxProd))
+						  ,sendEvent(name: 'today_max_prod', value: (5))
 						  ,sendEvent(name: 'today_max_prod_str', value: (String.format("%5.2f",todayMaxProd)))
 						  ,sendEvent(name: 'reported_id', value: (systemId))
 	                     ])

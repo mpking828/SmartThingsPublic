@@ -45,7 +45,10 @@ metadata {
         capability "Temperature Measurement"
         capability "Thermostat"
         capability "Configuration"
-        capability "Polling"
+        // Polling has never worked on Smart Things.
+        //capability "Polling"
+        // Try Health Check to aquire temp from device
+        capability "Health Check"
         capability "Sensor"
         capability "Battery"
         capability "Switch"
@@ -219,6 +222,10 @@ metadata {
         controlTile("coolSliderControlC", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(19..28)") {
             state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
         }
+        
+        standardTile("version", "device.version", inactiveLabel: false, decoration: "flat") {
+            state "version", label: 'v2'
+        }
 
         // Mode switch.  Indicate and allow the user to change between heating/cooling modes
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
@@ -302,7 +309,7 @@ metadata {
                  //"heatingSetpoint", "heatSliderControlC",   // Show Celsius Heat Slider
                  //"coolingSetpoint", "coolSliderControlC",   // Show Celsius Cool Slider
                  "lastPoll", "currentConfigCode", "currentTempOffset",
-                 "refresh", "configure"
+                 "refresh", "configure","version"
         ])
     }
 }
@@ -573,6 +580,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def updateState(String name, String value) {
     state[name] = value
     device.updateDataValue(name, value)
+}
+
+def ping() {
+	log.debug "ping called"
+	poll()
 }
 
 // Command Implementations

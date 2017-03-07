@@ -13,13 +13,14 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *
  */
 metadata {
 	definition (name: "Iris Smart Fob", namespace: "gouldner", author: "Mitch Pond") {
 		capability "Battery"
 		capability "Button"
         capability "Configuration"
-		capability "Presence Sensor"
+		// capability "Presence Sensor"
 		capability "Sensor"
 
 		command "testCmd"
@@ -48,8 +49,8 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		main (["presence","battery"])
-		details(["presence","button","battery"])
+		main (["battery"])
+		details(["button","battery"])
 	}
 }
 
@@ -71,7 +72,7 @@ def parse(String description) {
 }
 
 def updated() {
-	startTimer()
+	/*startTimer()*/
     configure()
 }
 
@@ -155,7 +156,7 @@ private getBatteryLevel(rawValue) {
     def vBatt = intValue / 10
     return ((vBatt - min) / (max - min) * 100) as int
 }
-
+/*
 private handlePresenceEvent(present) {
     def wasPresent = device.currentState("presence")?.value == "present"
     if (!wasPresent && present) {
@@ -181,6 +182,7 @@ private startTimer() {
     schedule("0 * * * * ?", checkPresenceCallback)
 }
 
+
 private stopTimer() {
     logIt "Stopping periodic timer"
     unschedule()
@@ -194,6 +196,7 @@ def checkPresenceCallback() {
         handlePresenceEvent(false)
     }
 }
+*/
 
 // ****** Utility functions ******
 
