@@ -22,16 +22,16 @@ metadata {
 	definition (name: "Fibaro Button", namespace: "Fibaro", author: "AdamV") {
 		capability "Actuator"
 		capability "Button"
-        capability "Holdable Button"
+                capability "Holdable Button"
 		capability "Battery"
 		capability "Configuration" 
 		capability "Refresh"
         
-        command "describeAttributes"
+                command "describeAttributes"
         
 		attribute "numberOfButtons", "number"
-        attribute "buttonClicks", "enum", ["one click", "two clicks", "three clicks", "four clicks", "five clicks", "hold start", "hold release"]
-        attribute "holdLevel", "number"
+                attribute "buttonClicks", "enum", ["one click", "two clicks", "three clicks", "four clicks", "five clicks", "hold start", "hold release"]
+                attribute "holdLevel", "number"
 
 		fingerprint deviceId: "0x1801", inClusters: "0x5E, 0x86, 0x72, 0x5B, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x8E, 0x7A, 0x98", outClusters: "0x26, 0x9C"
 							
