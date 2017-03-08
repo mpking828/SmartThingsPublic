@@ -14,6 +14,9 @@
  *  Version 0.9.0
  *  Author: AdamV
  *  Date: 2016-09-10
+ *  2017-03-08 by gouldner
+ *        - Added Holdable Button capability and fixed held event. 
+ *        - Some but not all indentation cleanup.  mixed space/tabs messing it up
  *
  * 
  */
@@ -22,7 +25,7 @@ metadata {
 	definition (name: "Fibaro Button", namespace: "Fibaro", author: "AdamV") {
 		capability "Actuator"
 		capability "Button"
-                capability "Holdable Button"
+                capability "Holdable Button" // Added
 		capability "Battery"
 		capability "Configuration" 
 		capability "Refresh"
@@ -132,66 +135,68 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
     // log.debug( "Payload: $cmd.payload")
     // log.debug( "command: $cmd.command")
     // log.debug( "commandclass: $cmd.commandClass")
-	def versions = [0x31: 3, 0x30: 2, 0x84: 2, 0x9C: 1, 0x70: 2]
-	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
-	def version = versions[cmd.commandClass as Integer]
-	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (!encapsulatedCommand) {
-		log.debug "Could not extract command from $cmd"
-	} else {
-		zwaveEvent(encapsulatedCommand)
+    def versions = [0x31: 3, 0x30: 2, 0x84: 2, 0x9C: 1, 0x70: 2]
+    // def encapsulatedCommand = cmd.encapsulatedCommand(versions)
+    def version = versions[cmd.commandClass as Integer]
+    def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+    def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+    if (!encapsulatedCommand) {
+        log.debug "Could not extract command from $cmd"
+    } else {
+        zwaveEvent(encapsulatedCommand)
         // log.debug("UnsecuredCommand: $encapsulatedCommand")
-	}
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-	//	log.debug( "keyAttributes: $cmd.keyAttributes")
-    //  log.debug( "sceneNumber: $cmd.sceneNumber")
-    //  log.debug( "sequenceNumber: $cmd.sequenceNumber")
-    // 	log.debug( "payload: $cmd.payload")
+        // log.debug( "keyAttributes: $cmd.keyAttributes")
+        // log.debug( "sceneNumber: $cmd.sceneNumber")
+        // log.debug( "sequenceNumber: $cmd.sequenceNumber")
+        // log.debug( "payload: $cmd.payload")
       	
         if ( cmd.keyAttributes == 0 ) {
-        	Integer button = 1
+            Integer button = 1
             sendEvent(name: "buttonClicks", value: "one click", descriptionText: "$device.displayName button was clicked once", isStateChange: true)
-        	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+            sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
             log.debug( "Button was pushed once" )
         }
         if ( cmd.keyAttributes == 3 ) {
-        	Integer button = 2
+            Integer button = 2
             sendEvent(name: "buttonClicks", value: "two clicks", descriptionText: "$device.displayName button was pushed twice", isStateChange: true)
-        	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+            sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
             log.debug( "Button was pushed twice" )
         }
         if ( cmd.keyAttributes == 4 ) {
-        	Integer button = 3
-            sendEvent(name: "buttonClicks", value: "three clicks", descriptionText: "$device.displayName button was pushed three times", isStateChange: true)
-        	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
-            log.debug( "Button was pushed three times" )
+           Integer button = 3
+	   sendEvent(name: "buttonClicks", value: "three clicks", descriptionText: "$device.displayName button was pushed three times", isStateChange: true)
+           sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+           log.debug( "Button was pushed three times" )
         }
         if ( cmd.keyAttributes == 5 ) {
-        	Integer button = 4
+            Integer button = 4
             sendEvent(name: "buttonClicks", value: "four clicks", descriptionText: "$device.displayName button was pushed four times", isStateChange: true)
-        	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+            sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
             log.debug( "Button was pushed four times" )
         }
-	    if ( cmd.keyAttributes == 6 ) {
-        	Integer button = 5
+	if ( cmd.keyAttributes == 6 ) {
+            Integer button = 5
             sendEvent(name: "buttonClicks", value: "five clicks", descriptionText: "$device.displayName button was pushed FIVE times", isStateChange: true)
-        	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+            sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
             log.debug( "Button was pushed five times" )
         }
-	    if ( cmd.keyAttributes == 2 ) {
-        	Integer button = 1
+	if ( cmd.keyAttributes == 2 ) {
+	    // Fixed Errors by added data for button number and commented out button clicks and button events
+	    // 
+            Integer button = 1
             sendEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
             //sendEvent(name: "buttonClicks", value: "hold start", data: [buttonClicks: "hold start"], descriptionText: "$device.displayName button is holdStart", isStateChange: true)
             //sendEvent(name: "button", value: "level", data: [cmd.sequenceNumber], descriptionText: "$device.displayName level is $cmd.sequenceNumber", isStateChange: true)
-        	log.debug( "Button held" )
+            log.debug( "Button held" )
             log.debug( "Button level: $cmd.sequenceNumber" )
         }
-	    if ( cmd.keyAttributes == 1 ) {
-            sendEvent(name: "buttonClicks", value: "hold release", descriptionText: "$device.displayName button is released", isStateChange: true)
-        	log.debug( "Button released" )
+	if ( cmd.keyAttributes == 1 ) {
+           sendEvent(name: "buttonClicks", value: "hold release", descriptionText: "$device.displayName button is released", isStateChange: true)
+           log.debug( "Button released" )
         } 
 }
 
@@ -256,7 +261,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelS
 
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
-	log.debug( "Dimming Duration: $cmd.dimmingDuration")
+    log.debug( "Dimming Duration: $cmd.dimmingDuration")
     log.debug( "Button code: $cmd.sceneId")
 }
 
@@ -266,8 +271,8 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 
 def configure() {
-	log.debug "Resetting Sensor Parameters to SmartThings Compatible Defaults"
-	def cmds = []
+    log.debug "Resetting Sensor Parameters to SmartThings Compatible Defaults"
+    def cmds = []
     cmds << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format()
     cmds << zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId).format()
     cmds << zwave.associationV1.associationSet(groupingIdentifier: 3, nodeId: zwaveHubNodeId).format()
