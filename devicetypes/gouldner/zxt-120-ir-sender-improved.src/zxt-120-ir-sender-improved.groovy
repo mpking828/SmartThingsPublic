@@ -75,6 +75,8 @@ metadata {
         command "heat"
         command "dry"
         command "off"
+        command "setLearningPosition"
+        command "issueLearningCommand"
         // how do these work....do they take arguments ?
         //command "setCoolingSetpoint"
         //command "setHeatingSetpoint"
@@ -89,6 +91,7 @@ metadata {
         attribute "temperatureName", "STRING"
         attribute "reportedCoolingSetpoint", "STRING"
         attribute "reportedHeatingSetpoint", "STRING"
+        attribute "learningPosition", "NUMBER"
 
         // Z-Wave description of the ZXT-120 device
         fingerprint deviceId: "0x0806"
@@ -224,7 +227,7 @@ metadata {
         }
         
         standardTile("version", "device.version", inactiveLabel: false, decoration: "flat") {
-            state "version", label: 'v2'
+            state "version", label: 'v3-L'
         }
 
         // Mode switch.  Indicate and allow the user to change between heating/cooling modes
@@ -291,6 +294,16 @@ metadata {
         standardTile("emergencyHeat", "device.thermostatMode", inactiveLabel: false) {
             state "emergencyHeat", action:"switchModeAuto", backgroundColor:"#ff0000", icon: "st.thermostat.emergency-heat"
         }
+        // Learning Mode Tiles
+        valueTile("learningPosition", "device.learningPosition", inactiveLabel: false, decoration: "flat") {
+            state "learningPosition", label:'${currentValue}', unit:""
+        }
+        controlTile("learningPositionControl", "device.learningPosition", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..22)") {
+            state "learningPosition", action:"setLearningPosition", backgroundColor: "#1e9cbb"
+        }
+        standardTile("issueLearningCommand", "issueLearningCommand", inactiveLabel: false, decoration: "flat") {
+            state "issueLearningCommand", label:'learn', action:"issueLearningCommand", icon:"http://gouldner.net/smartthings/icons/IrPaper.png"
+        }
 
         // Layout the controls on the SmartThings device UI.  The page is a 3x3 layout, tiles are layed out
         // starting in the upper left working right then down.
@@ -309,7 +322,9 @@ metadata {
                  //"heatingSetpoint", "heatSliderControlC",   // Show Celsius Heat Slider
                  //"coolingSetpoint", "coolSliderControlC",   // Show Celsius Cool Slider
                  "lastPoll", "currentConfigCode", "currentTempOffset",
-                 "refresh", "configure","version"
+                 "learningPosition","learningPositionControl",
+                 "issueLearningCommand","refresh", "configure",
+                 "version"
         ])
     }
 }
@@ -362,7 +377,8 @@ def getFanModeMap() { [
 def getCommandParameters() { [
         "remoteCode": 27,
         "tempOffsetParam": 37,
-        "oscillateSetting": 33
+        "oscillateSetting": 33,
+        "learningMode": 25
 ]}
 
 
@@ -687,6 +703,26 @@ def setCoolingSetpoint(degrees) {
     //setThermostatSetpointForMode(degreesInteger.toDouble(), setpointMode)
 }
 
+def setLearningPosition(position) {
+    log.debug "Setting learning postition: $position"
+    sendEvent("name":"learningPosition", "value":position)
+}
+
+def issueLearningCommand() {
+    def position = device.currentValue("learningPosition").toInteger()
+    log.debug "Issue Learning Command pressed Position Currently: $position"
+
+    def positionConfigArray = [position]
+
+    log.debug "Position Config Array: ${positionConfigArray}"
+
+    delayBetween ([
+            // Send the new remote code
+            zwave.configurationV1.configurationSet(configurationValue: positionConfigArray,
+                    parameterNumber: commandParameters["learningMode"], size: 1).format()
+    ])
+}
+
 //***** Set the thermostat */
 def setThermostatSetpoint(degrees) {
     log.debug "setThermostatSetpoint called.....want to get rid of that"
@@ -762,10 +798,32 @@ def getDataByName(String name) {
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
 {
     log.info "RRG V1 ThermostatSetpointReport cmd=$cmd"
+    log.debug "cmd.scale=$cmd.scale"
+    log.debug "cmd.scaledValue=$cmd.scaledValue"
     // Determine the temperature and mode the device is reporting
     def cmdScale = cmd.scale == 1 ? "F" : "C"
+    def deviceScale = state.scale ?: 1
+    log.debug "deviceScale=${deviceScale}"
+    def deviceScaleString = deviceScale == 2 ? "C" : "F"
 
-    def reportedTemp = convertTemperatureIfNeeded(cmd.scaledValue, cmdScale, cmd.precision)
+    //NOTE:  When temp is sent to device in Fahrenheit and returned in celsius
+    //       1 degree difference is normal.  Device only has 1 degree celsius granularity
+    //       issuing 80F for example returns 26C, which converts to 79F
+    //       Maybe I should lie to user and report current set temp rather than reported temp
+    //       to avoid confusion and false bug reports....needs to be considered.
+    def degrees = cmd.scaledValue
+    def reportedTemp
+    if (cmdScale == "C" && deviceScaleString == "F") {
+           log.debug "Converting celsius to fahrenheit"
+           reportedTemp = Math.ceil(celsiusToFahrenheit(degrees))
+    } else if (cmdScale == "F" && deviceScaleString == "C") {
+        log.debug "Converting fahrenheit to celsius"
+        reportedTemp = fahrenheitToCelsius(degrees)
+    } else {
+        log.debug "No Conversion needed"
+        reportedTemp = degrees
+    }
+
     
     // Determine what mode the setpoint is for, if the mode is not valid, bail out
     def name = setpointReportingMap.find {it.value == cmd.setpointType}?.key
