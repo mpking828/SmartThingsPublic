@@ -173,6 +173,9 @@ metadata {
 					icon:"st.Entertainment.entertainment2", 					
 					backgroundColor: "#cc99cc"
 			}
+            tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
+                attributeState "battery", label:'Battery: ${currentValue}%', unit:"%"
+            }
 		}
 		
 		standardTile("playAlarm", "device.alarm", width: 2, height: 2) {
