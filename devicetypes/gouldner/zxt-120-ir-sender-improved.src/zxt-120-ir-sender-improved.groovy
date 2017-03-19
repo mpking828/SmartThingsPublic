@@ -131,7 +131,7 @@ metadata {
     }
 
     // SmartThings app user interface
-    tiles {
+    tiles (scale: 2) {
         // The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
         // of the temperature
         valueTile("temperature", "device.temperature") {
@@ -309,22 +309,17 @@ metadata {
         // starting in the upper left working right then down.
         //main "temperature"
         main (["temperature","temperatureName"])
-        details(["temperature", "battery", "temperatureName",
-                 "thermostatMode", "fanMode", "swingMode",
-                 "cool", "dry", "heat",
-                 "reportedCoolingSetpoint","off","reportedHeatingSetpoint",
-                 "fanModeLow","fanModeMed","fanModeHigh",
-                 "fanModeAuto", "swingModeOn", "swingModeOff",
+        details(["temperature", "battery", "temperatureName", "thermostatMode", "fanMode", "swingMode",
+                 "off","cool", "dry", "heat", "reportedCoolingSetpoint","reportedHeatingSetpoint",
+                 "fanModeLow","fanModeMed","fanModeHigh", "fanModeAuto", "swingModeOn", "swingModeOff",
                  // Comment Out next two lines for Celsius Sliders
                  "heatingSetpoint", "heatSliderControl",      // Show Fahrenheit Heat Slider
                  "coolingSetpoint", "coolSliderControl",      // Show Fahrenheit Heat Slider
                  // Uncomment next two lines for Celsius Sliders
                  //"heatingSetpoint", "heatSliderControlC",   // Show Celsius Heat Slider
                  //"coolingSetpoint", "coolSliderControlC",   // Show Celsius Cool Slider
-                 "lastPoll", "currentConfigCode", "currentTempOffset",
-                 "learningPosition","learningPositionControl",
-                 "issueLearningCommand","refresh", "configure",
-                 "version"
+                 "lastPoll", "currentConfigCode", "currentTempOffset", "learningPosition","learningPositionControl",
+                 "issueLearningCommand","refresh", "configure","version"
         ])
     }
 }
