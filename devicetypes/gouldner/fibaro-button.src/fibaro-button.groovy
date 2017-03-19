@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 AdamV
+ *  Copyright 2016 Ronald Gouldner
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -10,14 +10,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *
+ *  Note:  The base of this code was taken from AdamV's version however I have overhauled quite a bit.
  *  Version 0.9.0
  *  Author: AdamV
- *  Date: 2016-09-10
- *  2017-03-08 by gouldner
- *        - Added Holdable Button capability and fixed held event. 
- *        - Some but not all indentation cleanup.  mixed space/tabs messing it up
- *
+ *  
+ *  Version: 1.0 
+ *  Author: Ronald Gouldner
  * 
  */
  
@@ -67,8 +65,13 @@ metadata {
             state "default", backgroundColor: "#ffffff", action: "configure", icon:"st.secondary.configure"
         }
         
+        standardTile("version", "device.version", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+            state "version", label: 'v1.0'
+        }
+
+        
         main "button"
-        details(["button","configure"])
+        details(["button","configure","version"])
     }
 }
 
