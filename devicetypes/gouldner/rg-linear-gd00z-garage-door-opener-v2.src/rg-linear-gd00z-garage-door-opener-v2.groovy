@@ -13,6 +13,13 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *
+ *
+ *
+ * Sample Battery Cmd Message ?
+ * cmd=NotificationReport(event: 74, eventParameter: [1], eventParametersLength: 1, notificationStatus: 255, 
+ *                        notificationType: 6, reserved61: 0, sequence: false, v1AlarmLevel: 0,
+ *                        v1AlarmType: 0, zensorNetSourceNodeId: 0)
  */
  
 
@@ -36,7 +43,7 @@ metadata {
         capability "Battery"
         
         attribute "lastBatteryStatus", "STRING"
-        attribute "batteryStatus", "STRING"
+        //attribute "batteryStatus", "STRING"
         command "batteryReset"
         
         fingerprint deviceId:"0x4007", inClusters:"0x72 0x98 0x5A"
@@ -81,14 +88,14 @@ metadata {
         standardTile("refresh", "device.door", inactiveLabel: false, decoration: "flat") {
             state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
         }
-        valueTile("batteryStatus", "device.batteryStatus", inactiveLabel: false, decoration: "flat") {
-            state "batteryStatus", label: 'Battery ${currentValue}', unit: ""
+        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+            state "battery", label: 'Battery ${currentValue}%', unit: "%"
         }
         // Last lastBatteryStatus Tile
         valueTile("lastBatteryStatus", "device.lastBatteryStatus", inactiveLabel: false, decoration: "flat") {
             state "lastBatteryStatus", label:'${currentValue}', unit:""
         }
-        valueTile("batteryReset", "device.batteryStatus", inactiveLabel: false, decoration: "flat") {
+        valueTile("batteryReset", "device.battery", inactiveLabel: false, decoration: "flat") {
             state "default", label: 'Battery\nReset', action: "batteryReset"
         }
         standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
@@ -97,11 +104,11 @@ metadata {
         }
         
         standardTile("version", "device.version", inactiveLabel: false, decoration: "flat") {
-            state "version", label: 'v2.1'
+            state "version", label: 'v2.2'
         }
 
         main(["toggle"])
-        details(["toggle", "open", "close", "lastBatteryStatus", "batteryStatus", "batteryReset", "button", "refresh","version"])
+        details(["toggle", "open", "close", "lastBatteryStatus", "battery", "batteryReset", "button", "refresh","version"])
     }
 }
 
@@ -241,7 +248,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
                 } else {
                     map.descriptionText = "$device.displayName door sensor has a low battery"
                 }
-                result << createEvent(name: "batteryStatus", value: "LOW", descriptionText: map.descriptionText)
+                result << createEvent(name: "battery", value: 1, descriptionText: map.descriptionText)
                 def now=new Date()
                 def tz = location.timeZone
                 def nowString = "Low:" + now.format("MMM/dd HH:mm",tz)
@@ -373,8 +380,9 @@ def refresh() {
     secureSequence([
                 zwave.barrierOperatorV1.barrierOperatorGet()
                 ,zwave.versionV1.versionGet()
+                //,zwave.batteryV1.batteryGet()
                 //,zwave.powerlevelV1.powerlevelGet()
-                //,zwave.notificationV3.notificationGet()
+                ,zwave.notificationV3.notificationGet()
                 //,zwave.notificationV3.notificationSupportedGet()
         ], 4200)
     /* */
@@ -389,7 +397,7 @@ def batteryReset() {
     def now=new Date()
     def tz = location.timeZone
     def nowString = "RESET:" + now.format("MMM/dd HH:mm",tz)
-    sendEvent("name": "batteryStatus", "value":"OK", "descriptionText":"Battery Reset to OK")
+    sendEvent("name": "battery", "value":100, "descriptionText":"Battery Reset to OK")
     sendEvent("name":"lastBatteryStatus", "value":nowString)
 }
 
