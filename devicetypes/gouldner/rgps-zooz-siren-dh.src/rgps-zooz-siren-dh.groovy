@@ -1,14 +1,19 @@
 /**
- *  Dome Siren v1.1.3
+ *  Dome Siren v2.0.0
  *  (Model: DMS01)
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
+ *  Modifed by:
+ *    Ronald Gouldner
  *
  *  URL to documentation:  https://community.smartthings.com/t/release-dome-siren-official/75499?u=krlaframboise
  *    
  *
  *  Changelog:
+ *
+ *    2.0.0 (03/11/2017) gouldner
+ *      - changed name space so I can place into my repo 
  *
  *    1.1.3 (03/11/2017)
  *      - Cleaned code for publication.
