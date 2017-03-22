@@ -97,7 +97,7 @@ def parse(String description) {
         def cmd = zwave.parse(description.replace("98C1", "9881"))
         //log.debug "Parsed Command: $cmd"
         if (cmd) {
-            results = zwaveEvent(cmd)
+            results += zwaveEvent(cmd)
         }
         if ( !state.numberOfButtons ) {
             state.numberOfButtons = "5"
@@ -132,7 +132,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
     def cmds = []
     // request battery 
-    cmds << zwave.batteryV1.batteryGet().format()
+    //cmds << zwave.batteryV1.batteryGet().format()
+    //cmds << zwave.versionV1.versionGet().format()
     // wait for response
     cmds << "delay 2400"
     // let wakeup go back to sleep
@@ -239,15 +240,28 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
     log.debug( "parameter: $cmd.parameterNumber, values: $cmd.configurationValue, size: $cmd.size")
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+    log.debug( "ConfigurationReport cmd: $cmd")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.powerlevelv1.PowerlevelReport cmd) {
     log.debug "Power Level Report cmd=$cmd"
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.proprietaryv1.ProprietaryReport cmd) {
+    log.debug "Property Report Report cmd=$cmd"
+}
+
 def configure() {
-    log.debug ("configure: requesting battery and version info 4")
+    log.debug ("configure: requesting configuration get")
     def commands = []
-    commands <<	response(zwave.batteryV1.batteryGet().format())
-    commands << zwave.versionV1.versionGet().format()
-    commands << zwave.powerlevelV1.powerlevelGet().format()
+    // battery get not working
+    //commands << response(zwave.batteryV1.batteryGet().format())
+    // version get not working
+    //commands << zwave.versionV1.versionGet().format()
+    // powerlevel get not working
+    //commands << zwave.powerlevelV1.powerlevelGet().format()
+    // configuration get not working
+    //commands << zwave.configurationV1.configurationGet().format()
     delayBetween(commands, 2300)
 }
