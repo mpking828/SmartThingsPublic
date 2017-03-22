@@ -1,5 +1,6 @@
 /**
- *  Copyright 2016 Ronald Gouldner
+ *  Copyright 2016 AdamV 
+ *  Copyright 2017 Ronald Gouldner
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -22,11 +23,12 @@
 metadata {
     definition (name: "Fibaro Button", namespace: "gouldner", author: "Ronald Gouldner") {
         capability "Actuator"
-        capability "Button"
-        capability "Holdable Button"
         capability "Battery"
-        capability "Configuration" 
+        capability "Button"
+        capability "Configuration"
+        capability "Holdable Button" 
         capability "Refresh" 
+        
         command "describeAttributes"
         
         attribute "numberOfButtons", "number"
@@ -44,34 +46,43 @@ metadata {
     }
 
     tiles (scale: 2) {      
-        multiAttributeTile(name:"button", type:"generic", width:6, height:4) {
-            tileAttribute("device.button", key: "PRIMARY_CONTROL"){
+        multiAttributeTile(name:"buttonClicks", type:"generic", width:6, height:4) {
+            tileAttribute("device.buttonClicks", key: "PRIMARY_CONTROL"){
                 //attributeState "default", label:'Fibaro Button', backgroundColor:"#44b621", icon:"st.Home.home30"
                 attributeState "default", label:'Fibaro Button', backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
                 //attributeState "default", label:'Fibaro Button', backgroundColor:"#44b621", icon:"http://www.freeiconspng.com/uploads/push-button-icon-png-2.png"
-                attributeState "held", label: "Held", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
-                attributeState "released", label: "Released", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
-                attributeState "1", label: "Button 1", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
-                attributeState "2", label: "Button 2", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
-                attributeState "3", label: "Button 3", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
-                attributeState "4", label: "Button 4", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
-                attributeState "5", label: "Button 5", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "hold start", label: "Held", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "hold release", label: "Released", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "one click", label: "Button 1", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "two clicks", label: "Button 2", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "three clicks", label: "Button 3", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "four clicks", label: "Button 4", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
+                attributeState "five clicks", label: "Button 5", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
             }
             tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
-                attributeState "battery", label:'${currentValue} % battery'
-            }   
+                attributeState "battery", label:'Battery: ${currentValue}%', unit:"%"
+            } 
+        }
+        standardTile("button", "device.button", width: 2, height: 2, decoration: "flat") {
+            state "default", label:'Fibaro', backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
+            state "held", label: "Held", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
+            state "released", label: "Released", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
+            state "pushed", label: "Pushed", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
         }
         valueTile("configure", "device.button", width: 2, height: 2, decoration: "flat") {
             state "default", backgroundColor: "#ffffff", action: "configure", icon:"st.secondary.configure"
         }
         
         standardTile("version", "device.version", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "version", label: 'v1.0'
+            state "version", label: 'v1.1'
         }
-
         
-        main "button"
-        details(["button","configure","version"])
+        valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2){
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
+        
+        main "buttonClicks"
+        details(["buttonClicks","button","battery", "configure","version"])
     }
 }
 
@@ -159,31 +170,31 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
     if ( cmd.keyAttributes == 0 ) {
         Integer button = 1
         sendEvent(name: "buttonClicks", value: "one click", descriptionText: "$device.displayName button was clicked once", isStateChange: true)
-        sendEvent(name: "button", value: "1", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
         log.debug( "Button was pushed once" )
     }
     if ( cmd.keyAttributes == 3 ) {
         Integer button = 2
         sendEvent(name: "buttonClicks", value: "two clicks", descriptionText: "$device.displayName button was pushed twice", isStateChange: true)
-        sendEvent(name: "button", value: "2", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
         log.debug( "Button was pushed twice" )
     }
     if ( cmd.keyAttributes == 4 ) {
         Integer button = 3
         sendEvent(name: "buttonClicks", value: "three clicks", descriptionText: "$device.displayName button was pushed three times", isStateChange: true)
-        sendEvent(name: "button", value: "3", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
         log.debug( "Button was pushed three times" )
     }
     if ( cmd.keyAttributes == 5 ) {
         Integer button = 4
         sendEvent(name: "buttonClicks", value: "four clicks", descriptionText: "$device.displayName button was pushed four times", isStateChange: true)
-        sendEvent(name: "button", value: "4", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
         log.debug( "Button was pushed four times" )
     }
     if ( cmd.keyAttributes == 6 ) {
         Integer button = 5
         sendEvent(name: "buttonClicks", value: "five clicks", descriptionText: "$device.displayName button was pushed FIVE times", isStateChange: true)
-        sendEvent(name: "button", value: "5", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
         log.debug( "Button was pushed five times" )
     }
     if ( cmd.keyAttributes == 2 ) {
@@ -202,21 +213,23 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-    log.debug ("Battery Report cmd=$cmd")
-    def map = [ name: "battery", unit: "%" ]
-    if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
-        map.value = 1
-        device.battery = 1
-        map.descriptionText = "${device.displayName} has a low battery"
-        map.isStateChange = true
-    } else {
-        map.value = cmd.batteryLevel
-        device.battery = cmd.batteryLevel
-        log.debug ("Battery: $cmd.batteryLevel")
-    }
-    // Store time of last battery update so we don't ask every wakeup, see WakeUpNotification handler
-    state.lastbatt = new Date().time
-    createEvent(map)
+    log.debug("BatteryReport: $cmd")
+	def val = (cmd.batteryLevel == 0xFF ? 1 : cmd.batteryLevel)
+	if (val > 100) {
+		val = 100
+	}
+	state.lastBatteryReport = new Date().time	
+	log.debug("Battery ${val}%")
+    
+    def currentBat = device.currentValue("battery")
+    log.debug("currentBat=${currentBat}")
+	
+	def isNew = (device.currentValue("battery") != val)
+	log.debug("isNew=${isNew}")	
+    
+	def result = []
+	result << createEvent(name: "battery", value: val, unit: "%", display: isNew, isStateChange: isNew)	
+	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
