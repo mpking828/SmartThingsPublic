@@ -90,12 +90,15 @@ metadata {
 
 def parse(String description) {
     def results = []
+    
     //log.debug("RAW command: $description")
     if (description.startsWith("Err")) {
         log.debug("An error has occurred")
-    } else {      
-        def cmd = zwave.parse(description.replace("98C1", "9881"))
-        //log.debug "Parsed Command: $cmd"
+    } else { 
+        // Why was 98C1 being replaced with 9881 ?
+        //def cmd = zwave.parse(description.replace("98C1", "9881"))
+        def cmd = zwave.parse(description)
+        log.debug "Parsed Command: $cmd"
         if (cmd) {
             results += zwaveEvent(cmd)
         }
@@ -131,13 +134,17 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     log.debug("Button Woke Up!")
     def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
     def cmds = []
-    // request battery 
-    //cmds << zwave.batteryV1.batteryGet().format()
+    // request battery (NOT WORKING)
+    cmds << zwave.batteryV1.batteryGet().format()
+    // request version (NOT WORKING)
     //cmds << zwave.versionV1.versionGet().format()
+    // request configuration info (NOT WORKING)
+    //cmds << zwave.configurationV1.configurationGet().format()
     // wait for response
-    cmds << "delay 2400"
+    cmds << "delay 6000"
     // let wakeup go back to sleep
     cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+    // delayBetween(cmds, 1000)
     [event, response(cmds)]
 }
 
@@ -263,5 +270,6 @@ def configure() {
     //commands << zwave.powerlevelV1.powerlevelGet().format()
     // configuration get not working
     //commands << zwave.configurationV1.configurationGet().format()
+    commands << response(zwave.configurationV1.configurationGet().format())
     delayBetween(commands, 2300)
 }
