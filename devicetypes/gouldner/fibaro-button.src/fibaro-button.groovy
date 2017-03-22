@@ -104,7 +104,10 @@ def parse(String description) {
             createEvent(name: "numberOfButtons", value: "5", displayed: false)
         }
     }
+    return results
 }
+
+
   
 def describeAttributes(payload) {
     payload.attributes = [
