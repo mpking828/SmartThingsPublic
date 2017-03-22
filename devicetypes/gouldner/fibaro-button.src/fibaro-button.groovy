@@ -1,5 +1,4 @@
 /**
- *  Copyright 2016 AdamV 
  *  Copyright 2017 Ronald Gouldner
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -11,13 +10,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Note:  The base of this code was taken from AdamV's version however I have overhauled quite a bit.
- *  Version 0.9.0
- *  Author: AdamV
- *  
  *  Version: 1.0 
  *  Author: Ronald Gouldner
- * 
+ *
+ *  Finger Print info
+ *  zw:Ss type:1801 mfr:0072 prod:0501 model:0F0F cc:5E,59,73,80,56,7A,98 sec:5B,85,84,5A,86,72,71,70,8E,9C secOut:26
+ *
  */
  
 metadata {
@@ -37,7 +35,12 @@ metadata {
 
         // http://docs.smartthings.com/en/latest/device-type-developers-guide/definition-metadata.html#fingerprinting
         // fingerprint mfg:0072, prod:0501, model:0F0F 
-        fingerprint deviceId: "0x1801", inClusters: "0x5E, 0x86, 0x72, 0x5B, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x8E, 0x7A, 0x98", outClusters: "0x26, 0x9C"
+        /*
+        *  Finger Print info, example raw description note I have two buttons and mfr and model are different on each one
+        *  zw:Ss type:1801 mfr:0072 prod:0501 model:0F0F cc:5E,59,73,80,56,7A,98 sec:5B,85,84,5A,86,72,71,70,8E,9C secOut:26 
+        *
+        */
+        fingerprint deviceId: "0x1801", inClusters: "0x5E, 0x59, 0x73, 0x80, 0x56, 0x7A, 0x98", outClusters: "0x26"
     }
 
     simulator {
@@ -48,9 +51,7 @@ metadata {
     tiles (scale: 2) {      
         multiAttributeTile(name:"buttonClicks", type:"generic", width:6, height:4) {
             tileAttribute("device.buttonClicks", key: "PRIMARY_CONTROL"){
-                //attributeState "default", label:'Fibaro Button', backgroundColor:"#44b621", icon:"st.Home.home30"
                 attributeState "default", label:'Fibaro Button', backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
-                //attributeState "default", label:'Fibaro Button', backgroundColor:"#44b621", icon:"http://www.freeiconspng.com/uploads/push-button-icon-png-2.png"
                 attributeState "hold start", label: "Held", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
                 attributeState "hold release", label: "Released", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
                 attributeState "one click", label: "Button 1", backgroundColor:"#44b621", icon:"st.unknown.zwave.remote-controller"
@@ -86,9 +87,8 @@ metadata {
     }
 }
 
-
-
 def parse(String description) {
+    log.debug ("Parsing description:$description")
     def results = []
     
     //log.debug("RAW command: $description")
@@ -102,50 +102,42 @@ def parse(String description) {
         if (cmd) {
             results += zwaveEvent(cmd)
         }
-        if ( !state.numberOfButtons ) {
-            state.numberOfButtons = "5"
-            createEvent(name: "numberOfButtons", value: "5", displayed: false)
-        }
     }
     return results
 }
 
-
-  
 def describeAttributes(payload) {
     payload.attributes = [
         [ name: "holdLevel", type: "number", range:"1..100", capability: "button" ],
         [ name: "buttonClicks", type: "enum",  options: ["one click", "two clicks", "three clicks", "four clicks", "five clicks", "hold start", "hold release"], momentary: true, capability: "button" ],
     ]
     return null
-}         
+}
 
+// Devices that support the Security command class can send messages in an
+// encrypted form; they arrive wrapped in a SecurityMessageEncapsulation
+// command and must be unencapsulated
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-    def encapsulatedCommand = cmd.encapsulatedCommand()
-        log.debug("UnsecuredCommand: $encapsulatedCommand")
-    // can specify command class versions here like in zwave.parse
-    if (encapsulatedCommand) {
-        log.debug("UnsecuredCommand: $encapsulatedCommand")
-        return zwaveEvent(encapsulatedCommand)
-    }
+        log.debug ("SecurityMessageEncapsulation cmd:$cmd")
+        def encapsulatedCommand = cmd.encapsulatedCommand([0x98: 1, 0x20: 1])
+
+        // can specify command class versions here like in zwave.parse
+        if (encapsulatedCommand) {
+                return zwaveEvent(encapsulatedCommand)
+        }
+        log.debug ("No encalsulatedCommand Processed")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     log.debug("Button Woke Up!")
     def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
     def cmds = []
-    // request battery (NOT WORKING)
-    cmds << zwave.batteryV1.batteryGet().format()
-    // request version (NOT WORKING)
-    //cmds << zwave.versionV1.versionGet().format()
-    // request configuration info (NOT WORKING)
-    //cmds << zwave.configurationV1.configurationGet().format()
-    // wait for response
-    cmds << "delay 6000"
+    // request battery
+    // cmds += zwave.batteryV1.batteryGet()
     // let wakeup go back to sleep
-    cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-    // delayBetween(cmds, 1000)
-    [event, response(cmds)]
+    cmds += zwave.wakeUpV1.wakeUpNoMoreInformation()
+    
+    [event, encapSequence(cmds, 500)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
@@ -229,47 +221,63 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	if (val > 100) {
 		val = 100
 	}
-	state.lastBatteryReport = new Date().time	
-	log.debug("Battery ${val}%")
-    
-    def currentBat = device.currentValue("battery")
-    log.debug("currentBat=${currentBat}")
-	
-	def isNew = (device.currentValue("battery") != val)
-	log.debug("isNew=${isNew}")	
-    
+	state.lastBatteryReport = new Date().time	    	
+	def isNew = (device.currentValue("battery") != val)    
 	def result = []
 	result << createEvent(name: "battery", value: val, unit: "%", display: isNew, isStateChange: isNew)	
 	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-    log.debug( "parameter: $cmd.parameterNumber, values: $cmd.configurationValue, size: $cmd.size")
+    log.debug("V2 ConfigurationReport cmd: $cmd")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-    log.debug( "ConfigurationReport cmd: $cmd")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.powerlevelv1.PowerlevelReport cmd) {
-    log.debug "Power Level Report cmd=$cmd"
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.proprietaryv1.ProprietaryReport cmd) {
-    log.debug "Property Report Report cmd=$cmd"
+    log.debug("V1 ConfigurationReport cmd: $cmd")
 }
 
 def configure() {
-    log.debug ("configure: requesting configuration get")
-    def commands = []
-    // battery get not working
-    //commands << response(zwave.batteryV1.batteryGet().format())
-    // version get not working
-    //commands << zwave.versionV1.versionGet().format()
-    // powerlevel get not working
-    //commands << zwave.powerlevelV1.powerlevelGet().format()
-    // configuration get not working
-    //commands << zwave.configurationV1.configurationGet().format()
-    commands << response(zwave.configurationV1.configurationGet().format())
-    delayBetween(commands, 2300)
+    log.debug "Executing 'configure'"
+
+    log.debug ("setting number of buttons if not set")
+    if ( !state.numberOfButtons ) {
+        state.numberOfButtons = "5"
+        createEvent(name: "numberOfButtons", value: "5", displayed: false)
+    }
+    def cmds = []
+
+    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds:21600, nodeid: zwaveHubNodeId)
+    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
+    cmds += zwave.versionV1.versionGet()
+    cmds += zwave.batteryV1.batteryGet()
+    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId: [zwaveHubNodeId])
+    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+
+    encapSequence(cmds, 500)
 }
+
+private encapSequence(commands, delay=200) {
+        delayBetween(commands.collect{ encap(it) }, delay)
+}
+
+private secure(physicalgraph.zwave.Command cmd) {
+        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crc16(physicalgraph.zwave.Command cmd) {
+        //zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+    "5601${cmd.format()}0000"
+}
+
+private encap(physicalgraph.zwave.Command cmd) {
+    def secureClasses = [0x5B, 0x85, 0x84, 0x5A, 0x86, 0x72, 0x71, 0x70 ,0x8E, 0x9C]
+    //todo: check if secure inclusion was successful
+    //if not do not send security-encapsulated command
+    if (secureClasses.find{ it == cmd.commandClassId }) {
+        secure(cmd)
+    } else {
+        crc16(cmd)
+    }
+}
+
