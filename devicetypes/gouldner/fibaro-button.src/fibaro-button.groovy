@@ -10,8 +10,18 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Version: 1.0 
+ *  Based on Version 0.9.1 Author: AdamV but largely overhauled
+ *
+ *  Version: 1.1 
  *  Author: Ronald Gouldner
+ *      Features
+ *              - Has Correct fingerprint so should be selected as the device handler for your 
+ *                Fibaro Button if added to your ide before you include the button
+ *              - Implemented Battery Status (Note activates on Wake and seems to get sent on occasion
+ *                button is pressed.  4 press manual wake should update the button in a few clicks
+ *              - Reports last action (Pressed, Held (while being held) and Released (following a hold)
+ *              - Reports which button was last pressed
+ *
  *
  *  Finger Print info
  *  zw:Ss type:1801 mfr:0072 prod:0501 model:0F0F cc:5E,59,73,80,56,7A,98 sec:5B,85,84,5A,86,72,71,70,8E,9C secOut:26
@@ -34,9 +44,12 @@ metadata {
         attribute "holdLevel", "number"
 
         // http://docs.smartthings.com/en/latest/device-type-developers-guide/definition-metadata.html#fingerprinting
-        // fingerprint mfg:0072, prod:0501, model:0F0F 
+        // fingerprint mfg:0072, prod:0501, model:0F0F NOTE: This finger print works with one of my buttons but not the other
+        // for some reason Fibar Group has used two different mfg codes and two different model numbers for units that look largly the same
+        // one was a blue button one was brown not sure if model reflects color but mfg changed also
+        // so changing the finger print to an accurate mapping of supported command classes
         /*
-        *  Finger Print info, example raw description note I have two buttons and mfr and model are different on each one
+        *  Finger Print info, example raw description note I have two buttons and mfr and model are different for each one
         *  zw:Ss type:1801 mfr:0072 prod:0501 model:0F0F cc:5E,59,73,80,56,7A,98 sec:5B,85,84,5A,86,72,71,70,8E,9C secOut:26 
         *
         */
@@ -44,8 +57,7 @@ metadata {
     }
 
     simulator {
-        status "button 1 pushed":  "command: 9881, payload: 00 5B 03 DE 00 01"  
-        // need to redo simulator commands
+        // need to implement simulator commands I built using a physical device to test
     }
 
     tiles (scale: 2) {      
@@ -70,12 +82,13 @@ metadata {
             state "released", label: "Released", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
             state "pushed", label: "Pushed", backgroundColor: "#44b621", icon:"st.unknown.zwave.remote-controller"
         }
+        
         valueTile("configure", "device.button", width: 2, height: 2, decoration: "flat") {
             state "default", backgroundColor: "#ffffff", action: "configure", icon:"st.secondary.configure"
         }
         
         standardTile("version", "device.version", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "version", label: 'v1.1'
+            state "version", label: 'DH v1.1'
         }
         
         valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2){
@@ -95,8 +108,6 @@ def parse(String description) {
     if (description.startsWith("Err")) {
         log.debug("An error has occurred")
     } else { 
-        // Why was 98C1 being replaced with 9881 ?
-        //def cmd = zwave.parse(description.replace("98C1", "9881"))
         def cmd = zwave.parse(description)
         log.debug "Parsed Command: $cmd"
         if (cmd) {
@@ -247,6 +258,7 @@ def configure() {
     def cmds = []
 
     cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds:21600, nodeid: zwaveHubNodeId)
+    // Not reporting back currently but leaving these in anyway.
     cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
     cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
     cmds += zwave.versionV1.versionGet()
