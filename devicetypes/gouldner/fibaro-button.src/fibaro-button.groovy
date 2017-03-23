@@ -270,6 +270,12 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 def configure() {
     log.debug "Executing 'configure'"
 
+    device.currentValue("battery")
+    
+    if (!device.currentValue("version")) {
+        sendEvent(name: "version", value: 'unknown', descriptionText: "Fibaro Button Version $ver", isStateChange: true)
+    }
+    
     log.debug ("setting number of buttons if not set")
     if ( !state.numberOfButtons ) {
         state.numberOfButtons = "5"
