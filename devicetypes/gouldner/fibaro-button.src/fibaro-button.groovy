@@ -12,7 +12,7 @@
  *
  *  Based on Version 0.9.1 Author: AdamV but largely overhauled
  *
- *  Version: 1.1 
+ *  Version: 1.2 
  *  Author: Ronald Gouldner
  *      Features
  *              - Has Correct fingerprint so should be selected as the device handler for your 
@@ -21,7 +21,13 @@
  *                button is pressed.  4 press manual wake should update the button in a few clicks
  *              - Reports last action (Pressed, Held (while being held) and Released (following a hold)
  *              - Reports which button was last pressed
- *
+ *              - Reports Firmware Version and Device Handler Version in tiles  NOTE: To populate
+ *                the Device version you must do the following on a V2 Hub, This uses secure command so doesn't
+ *                populate on V1 Hubs.  To Populate the data do the following
+ *                    - press button 4 time (wakes the device)
+ *                    - immediately tap "Configure" tile
+ *               - Reports ManufacturerSpecificReport, DeviceSpecificReport, VersionReport, BatteryReport to LOGS
+ *                 when you configure with 4 button press and configure tile press
  *
  *  Finger Print info
  *  zw:Ss type:1801 mfr:0072 prod:0501 model:0F0F cc:5E,59,73,80,56,7A,98 sec:5B,85,84,5A,86,72,71,70,8E,9C secOut:26
@@ -87,8 +93,12 @@ metadata {
             state "default", backgroundColor: "#ffffff", action: "configure", icon:"st.secondary.configure"
         }
         
-        standardTile("version", "device.version", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "version", label: 'DH v1.1'
+        standardTile("dhversion", "device.dhversion", width: 3, height: 1, inactiveLabel: false, decoration: "flat") {
+            state "dhversion", label: 'Device Handler v1.2'
+        }
+        
+        standardTile("version", "device.version", width: 3, height: 1, inactiveLabel: false, decoration: "flat") {
+            state "version", label: 'Fibaro Button Ver:${currentValue}'
         }
         
         valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2){
@@ -96,7 +106,7 @@ metadata {
 		}
         
         main "buttonClicks"
-        details(["buttonClicks","button","battery", "configure","version"])
+        details(["buttonClicks","button","battery", "configure","version","dhversion"])
     }
 }
 
@@ -153,6 +163,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     log.debug "VersionReport cmd:$cmd"
+    def ver = cmd.applicationVersion + "." + cmd.applicationSubVersion
+    sendEvent(name: "version", value: ver, descriptionText: "Fibaro Button Version $ver", isStateChange: true)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
@@ -245,6 +257,14 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     log.debug("V1 ConfigurationReport cmd: $cmd")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) {
+    log.debug("DeviceSpecificReport cmd: $cmd")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+    log.debug("ManufacturerSpecificReport cmd: $cmd")
 }
 
 def configure() {
