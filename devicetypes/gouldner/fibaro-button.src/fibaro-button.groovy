@@ -101,17 +101,32 @@ metadata {
         }
         
         valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2){
-			state "battery", label:'${currentValue}% battery', unit:""
+			state "battery", label:'${currentValue}% battery', unit:"%"
+		}
+        
+        valueTile("numberOfButtons", "device.numberOfButtons", decoration: "flat", width: 2, height: 2){
+			state "numberOfButtons", label:'${currentValue}', unit:""
 		}
         
         main "buttonClicks"
-        details(["buttonClicks","button","battery", "configure","version","dhversion"])
+        details(["buttonClicks","button","battery", "configure","version","dhversion","numberOfButtons"])
     }
 }
 
 def parse(String description) {
     log.debug ("Parsing description:$description")
+    def event
     def results = []
+
+    def numberOfButtonsVal = device.currentValue("numberOfButtons")
+    log.debug ("setting number of buttons if not set numberOfButtons:${state.numberOfButtons} numberOfButtons:${numberOfButtonsVal}")
+    if ( !state.numberOfButtons || !numberOfButtonsVal) {
+        state.numberOfButtons = "5"
+        event = createEvent(name: "numberOfButtons", value: "5", displayed: false)
+        if (event) {
+            results += event
+        }
+    }
     
     //log.debug("RAW command: $description")
     if (description.startsWith("Err")) {
@@ -120,7 +135,10 @@ def parse(String description) {
         def cmd = zwave.parse(description)
         log.debug "Parsed Command: $cmd"
         if (cmd) {
-            results += zwaveEvent(cmd)
+            event = zwaveEvent(cmd)
+            if (event) {
+                results += event
+            }
         }
     }
     return results
@@ -270,18 +288,11 @@ def configure() {
     log.debug "Executing 'configure'"
 
     device.currentValue("battery")
-    
     if (!device.currentValue("version")) {
         sendEvent(name: "version", value: 'unknown', descriptionText: "Fibaro Button Version $ver", isStateChange: true)
     }
     
-    log.debug ("setting number of buttons if not set")
-    if ( !state.numberOfButtons ) {
-        state.numberOfButtons = "5"
-        createEvent(name: "numberOfButtons", value: "5", displayed: false)
-    }
     def cmds = []
-
     cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds:21600, nodeid: zwaveHubNodeId)
     // Not reporting back currently but leaving these in anyway.
     cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
@@ -290,8 +301,7 @@ def configure() {
     cmds += zwave.batteryV1.batteryGet()
     cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId: [zwaveHubNodeId])
     cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
-
-    encapSequence(cmds, 500)
+    return encapSequence(cmds, 500)
 }
 
 private encapSequence(commands, delay=200) {
