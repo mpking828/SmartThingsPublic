@@ -18,12 +18,11 @@
  *              - Has Correct fingerprint so should be selected as the device handler for your 
  *                Fibaro Button if added to your ide before you include the button
  *              - Implemented Battery Status (Note activates on Wake and seems to get sent on occasion
- *                button is pressed.  4 press manual wake should update the button in a few clicks
+ *                button is pressed.  4 press manual wake should update the button in a few clicks)
  *              - Reports last action (Pressed, Held (while being held) and Released (following a hold)
  *              - Reports which button was last pressed
  *              - Reports Firmware Version and Device Handler Version in tiles  NOTE: To populate
- *                the Device version you must do the following on a V2 Hub, This uses secure command so doesn't
- *                populate on V1 Hubs.  To Populate the data do the following
+ *                the Device version you must do the following.
  *                    - press button 4 time (wakes the device)
  *                    - immediately tap "Configure" tile
  *               - Reports ManufacturerSpecificReport, DeviceSpecificReport, VersionReport, BatteryReport to LOGS
