@@ -131,7 +131,8 @@ metadata {
     }
 
     // SmartThings app user interface
-    tiles (scale: 2) {
+    // Note: scale: 2 if you want to see 6 tiles/line
+    tiles (scale: 1) {
         // The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
         // of the temperature
         valueTile("temperature", "device.temperature") {
