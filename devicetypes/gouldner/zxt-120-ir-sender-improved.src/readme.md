@@ -4,6 +4,7 @@ You can find a copy of the manual for this device here also in my github repo.  
 
 [ZXT-120 Manual v1.0](https://github.com/gouldner/SmartThingsPublic/blob/master/devicetypes/gouldner/docs/zxt-120/rm-zxt-Zipato-Ir-Extender-User-Manual-v1.0.pdf)
 
+## H2 Install Custom Device Code
 First you must install the device code into your ide.  For instructions on how to do this see the very helpful FAQ on the community site.
 [How to install Custom Device Code](https://community.smartthings.com/t/faq-an-overview-of-using-custom-code-in-smartthings/16772)
 If you are too lazy to read this FAQ you will miss out on some excellent features for linking github to your ide for easy updates in the future etc.  But I understand if you only want to do this once for this device it is a lot to digest so here is the quick and dirty steps.
@@ -14,16 +15,16 @@ If you are too lazy to read this FAQ you will miss out on some excellent feature
 5. Press "Create" to save this code and create your copy of the custom device code.
 6. You should now see a device handler in your device handler list with the label "gouldner : ZXT-120 IR Sender Improved" assuming you made no changes to the namespace or name of the device handler.
 
-Now lets get ready to install the ZXT-120 into your system
-The Steps are as follows.
+## H2 Join ZXT-120 to SmartThings
 1. Make sure your deviced in connected to a USB charger.  It works best this way.  Battery mode doesn't respond as needed so I recommend connecting the device to a wired charger at all times.  The next step requires a battery.  Continuous listening mode doesn't work with batteries according to the manual.
 2. Make sure the device is in Continuous Listening Mode.  To do this follow the instructions in the [manual] (https://github.com/gouldner/SmartThingsPublic/blob/master/devicetypes/gouldner/docs/zxt-120/rm-zxt-Zipato-Ir-Extender-User-Manual-v1.0.pdf) on page 13/14.  
 3. Now select add a device in the Smart Things App.  I am going to document how to do this because Smart Things likes to change the app very often moving things around making it impossible to really document how these things are done.  If you don't know how to add a device visit the [community](https://community.smartthings.com/) and search for instructions or contact Smart Things for support.
 4. Once the Smart Things App is looking for devices press the button on the ZXT-120 so the Samrt Things Hud will see it and include the device.  The correct device Handler should be discovered as I have configured the fingerprint to match the device.  If it doesn't you may have to visit the "My Devices" page, select the ZXT-120 you just added, click edit and change the device handler to the "ZXT-120 IR Sender Improved" you created above.  NOTE: if you already included the device before installing the device handler you can switch it using this technique as well.
 
-Now you need to configure your ZXT-120
-< More instructions to come...sorry ran out of time... >
-
-
+## H2 Configure ZXT-120 to work with your AC
+1. Launch the Device you added, and select the configuration button (Gear in top right hand corner)
+2. Change the device Name to suit your purposes.
+3. Set your Remote Code.  Remote codes are listed in the Manual (https://github.com/gouldner/SmartThingsPublic/blob/master/devicetypes/gouldner/docs/zxt-120/rm-zxt-Zipato-Ir-Extender-User-Manual-v1.0.pdf) starting on page 34. You can also choose the set the optional shortname.  Select Done when finished with the screen.
+4. Click the Configure Button to set the Remote Code.
 
 
